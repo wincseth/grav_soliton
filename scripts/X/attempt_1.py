@@ -13,8 +13,8 @@ A = 0
 B = 0
 zetta_s = 0.01
 n = 1
-delta = 1/(n+1)
-zetta = n*delta
+DELTA = 1/(n+1)
+zetta = n*DELTA
 
 
 #Finite differences attempt 1
@@ -22,8 +22,8 @@ def finite_differences(A, B):
     goo = np.exp(2*A) #g_00 guess
     grr = np.exp(2*B) #g_rr guess
     goo_approx = 2*np.exp(A)*np.sinh(A) #approx. used for g_00(1-1/g_00)
-    C = -(goo/grr)*(zetta_s**2/((4*zetta**2)*(zetta**2-zetta_s**2)))+(2/zetta_s)*goo_approx+2*(goo/grr)/delta**2 #first value
-    D = -(goo/grr)/delta**2 #second value
+    C = -(goo/grr)*(zetta_s**2/((4*zetta**2)*(zetta**2-zetta_s**2)))+(2/zetta_s)*goo_approx+2*(goo/grr)/DELTA**2 #first value
+    D = -(goo/grr)/DELTA**2 #second value
     matrix = [[C, D],[D, C]]
     lambdan = np.diag(matrix)
     epsilon = lambdan/(1+np.sqrt(1+zetta_s*lambdan/2))

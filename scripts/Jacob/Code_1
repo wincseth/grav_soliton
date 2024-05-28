@@ -1,0 +1,98 @@
+import numpy as np
+import matplotlib.pyplot as plt
+#global variables should be all caps
+
+A = 0 #initial condition for time metric  
+B = 0 #initial condition for radial matric
+n = 50 # steps
+DELTA = 1/(n+1) # finite difference?
+ZETA = n*DELTA #initializing ZETA values
+ZETA_S = 0.01 #initialized from some eigenvalues
+G = 6.7*10**(-39) #normalized gravity
+M_PL = 1 / np.sqrt(G) #mass of plank mass
+M = 8.2*10**10 #if a equals the atomic Bohr radius
+#a = 1 /(G*M**3)#gravitational bohr radius
+R_S = 2*G*M #schwarzschild radius
+g00 = np.exp(2*A) #time metric
+grr = np.exp(2*B) #radial metric
+#g00 = 1 - ZETA/ZETA_S #time metric in terms of ZETA's
+#grr = 1/g00 #radial metric in terms of ZETA's
+level = 1
+x = np.linspace(-10, 10, n)
+y = np.linspace(-10, 10, n)
+X, Y = np.meshgrid(x, y)
+
+def KG_coeff(ZETA, ZETA_S, g00, grr):
+    if ZETA != ZETA_S:
+        H = (ZETA_S**2)/(4*(ZETA**2)*(ZETA**2 - ZETA_S**2))  # this is h_~"/h_~ = H
+        c = (-(g00/grr)*H + (4/ZETA_S)*np.exp(A)*np.sinh(A) + 2*((g00/grr)/(DELTA**2)))#matrix component
+        d = -(g00/grr)/(DELTA**2)#matrix component
+    else:
+        c = 0
+        d = 0
+    return c, d
+
+C, D = KG_coeff(ZETA, ZETA_S, g00, grr)
+print("C_value =", C)
+print("D_value =", D)
+
+def KG_vlaues(n, C, D):
+    matrix = np.zeros((n,n))#setting all zero meshgrid matrix
+    for i in range(n):    
+        matrix[i,i] = C
+        if i < n - 1:
+            matrix[i, i+1] = D
+        if i > 1:
+            matrix[i, i-1] = D
+
+    e_vals, e_vecs = np.linalg.eig(matrix)
+    e_val = e_vals[level]
+    e_vec = e_vecs[:, level]#selects a whole coloumn
+    epsilon = e_val/(1 + np.sqrt(1 + (ZETA_S*e_val)/2))
+
+    return epsilon,e_val, e_vec
+e,j,k = KG_vlaues(n, C, D)#j= epsilon, k= e_vec
+print("epsilon =", e)
+print("e_val =", j)#prints e_values
+print("e_vec =", k)#prints e_vectors
+
+#ZETAs = np.arange(0, 0.009, d_ZETA)
+#y_vals = KG_vlaues(ZETA,g00,grr)
+#print.plot(ZETA, y_vals)
+#plt.grid(true)
+#plt.show()
+
+def h_tilde(ZETA, g00, grr):
+    h_tilde = ZETA**np.sqrt(np.sqrt(g00/grr))
+    return h_tilde
+
+def R_tilde(ZETA, g00, k):
+    R_tilde = np.sqrt(g00)*k**2 / ZETA**2
+    return R_tilde
+R = R_tilde(ZETA, g00, k)
+
+print("R_tilde", R)
+
+def dR_tilde(R):
+    dR_tilde = np.zeros(len(R))
+    for i in range(len(R)):
+        if i == n-1 or i == 0:
+            dR_tilde[i] = 0
+            continue
+        dR_tilde[i] = (R[i+1] - R[i-1])/(2*DELTA)
+    return(dR_tilde)
+dR = dR_tilde(R)
+
+print("dR_tilde", dR)
+
+def dA(ZETA, ZETA_S, R, dR, g00, grr, e):
+    dA = (grr-1)/(2*ZETA) - (ZETA_S*ZETA*grr*R**2)/4 + ((ZETA_S**2)*ZETA/8)*(dR)**2 + (ZETA_S*ZETA/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00) * (R)**2
+    return dA
+a = dA(ZETA, ZETA_S, R, dR, g00, grr, e)
+print("dA", a)
+
+def dB(ZETA, ZETA_S, R, dR, g00, grr, e):
+    dB = -(grr-1)/(2*ZETA) + (ZETA_S*ZETA*grr*R**2)/4 + ((ZETA_S**2)*ZETA/8)*(dR)**2 + (ZETA_S*ZETA/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00) * (R)**2
+    return dB
+b = dB(ZETA, ZETA_S, R, dR, g00, grr, e)
+print("dB", b)

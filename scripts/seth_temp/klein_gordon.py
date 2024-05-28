@@ -1,9 +1,9 @@
-# zeta_s = 0.01, del = 0.01, n = 20, A = B = 0
+# ZETA_S = 0.01, del = 0.01, n = 20, A = B = 0
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-zeta_s = 0.01 #schwarchild radius and bohr radius ratio
+ZETA_S = 0.01 #schwarchild radius and bohr radius ratio
 del_step = 0.01 #step size
 n = 20
 A, B = 0 #related to metric
