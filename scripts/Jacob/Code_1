@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 A = 0 #initial condition for time metric  
 B = 0 #initial condition for radial matric
-n = 50 # steps
+n = 1 # steps
 DELTA = 1/(n+1) # finite difference?
 ZETA = n*DELTA #initializing ZETA values
 ZETA_S = 0.01 #initialized from some eigenvalues
