@@ -56,12 +56,6 @@ print("epsilon =", e)
 print("e_val =", j)#prints e_values
 print("e_vec =", k)#prints e_vectors
 
-#ZETAs = np.arange(0, 0.009, d_ZETA)
-#y_vals = KG_vlaues(ZETA,g00,grr)
-#print.plot(ZETA, y_vals)
-#plt.grid(true)
-#plt.show()
-
 def h_tilde(ZETA, g00, grr):
     h_tilde = ZETA**np.sqrt(np.sqrt(g00/grr))
     return h_tilde
