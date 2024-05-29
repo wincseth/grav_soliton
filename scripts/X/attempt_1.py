@@ -9,12 +9,13 @@ Created on Tue May 21 09:36:13 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
-n = 250
-A = np.zeros(n)
-B = np.zeros(n)
-zetta_s = 0.01
+n = 500
+A = np.linspace(0, 3, n)
+B = np.linspace(0, 2, n) 
+zetta_s = .01
 delta = 1/(n+1)
-zetta_n = np.arange(0.00001, 10, 10/n)
+zetta_max = n*delta
+zetta_n = np.arange(1*10**-10, zetta_max, delta)
 Rounds = 20
 
 #Finite differences attempt 1
@@ -22,23 +23,26 @@ def finite_differences(A, B):
     goo = np.exp(2*A) #g_00 guess
     grr = np.exp(2*B) #g_rr guess
     goo_approx = 2*np.exp(A)*np.sinh(A) #approx. used for g_00(1-1/g_00)
-    C = -(goo/grr)*(zetta_s**2/((4*zetta_n**2)*(zetta_n**2-zetta_s**2)))+(2/zetta_s)*goo_approx+2*(goo/grr)/delta**2 #first value
-    D = -(goo/grr)/delta**2 #second value
     matrix = np.zeros((n, n)) #creating a matrix of 0s
     for i in range(n): #adding the values into 0 for all the equations from 0 to n
-        matrix[i, i] = C[n-1]
+        C = -(goo[i]/grr[i])*(zetta_s**2/((4*zetta_n[i]**2)*(zetta_n[i]**2-zetta_s**2)))+(2/zetta_s)*goo_approx[i]+2*(goo[i]/grr[i])/delta**2 #first value
+        matrix[i, i] = C
         if i < n-1:
-            matrix[i, i+1] = D[n-1]
-        if i > 1:
-            matrix[i, i-1] = D[n-1]
+            D = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i+1]/grr[i+1])/(delta)**2 #second value
+            matrix[i, i+1] = D
+        if i > 0:
+            E = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i-1]/grr[i-1])/(delta)**2
+            matrix[i, i-1] = E
     eigenvalues, eigenvectors = np.linalg.eig(matrix) #getting the eigenvalues and eigenvectors
     N = np.argmin(eigenvalues)
+    print(N, eigenvalues[N])
     epsilon = eigenvalues[N]/(1+np.sqrt(1+zetta_s*eigenvalues[N]/2))
     eigen_vec = eigenvectors[:, N]
     return [epsilon, eigen_vec]
 
 def radial_function(u, A):
-    R = np.sqrt(np.exp(2*A))*u / (n*delta)
+    R = np.sqrt(np.exp(2 * A)) * u / (n * delta)
+    R = np.sqrt(R**2)/(np.sqrt(np.sum(R**2 * delta)))
     return R
 
 def der_of_R(R):
@@ -74,7 +78,7 @@ for i in range(Rounds):
     R = radial_function(eigen_vec, A)
     dR = der_of_R(R)
     A, B = Runge_Kutta(R, dR, A, B, epsilon)
-    print("A: ", A[n-1], "B: ",B[n-1], "e: ", epsilon)
+    print("e: ", epsilon)
     
 plt.figure(figsize=(9,9))
 plt.plot(zetta_n, R)    
