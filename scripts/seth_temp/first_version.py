@@ -7,8 +7,9 @@ LEVEL = 1 # which energy (e-val) and u bar set (e-vec) to use
 ZETA_S = 0.5
 ZETA_MAX = 10
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
-ZETA_VALS = np.arange(0.01, ZETA_MAX, DELTA)
+ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
+ITERATIONS = 20 # how many times to run through the equations
 print(f"length of zeta array: {len(ZETA_VALS)}")
 # Klein Gordon equation solver ----------------------------------------------------
 def kg_find_coeffs(A_array, B_array):
@@ -32,9 +33,13 @@ def kg_find_coeffs(A_array, B_array):
     for n, zeta_n in enumerate(ZETA_VALS):
         g_frac = g_00_array[n]/g_rr_array[n]
         # fill C's:
-        if zeta_n != ZETA_S:
+        if zeta_n == ZETA_S:
+            print("\n Current zeta is the same as zeta_s (Bad!)\n")
+        if zeta_n != 0:
             h_tilde_frac = -(ZETA_S**2)/(4*(zeta_n**2)*(zeta_n**2 - ZETA_S**2))
-            c_consts[n] = g_frac*h_tilde_frac + (4/ZETA_S)*np.exp(A_array[n])*np.sinh(A_array[n]) + 2*g_frac/(DELTA**2)
+        else:
+            h_tilde_frac = 0    
+        c_consts[n] = g_frac*h_tilde_frac + (4/ZETA_S)*np.exp(A_array[n])*np.sinh(A_array[n]) + 2*g_frac/(DELTA**2)
         # fill D's:
         if n != N_MAX-1:
             g_frac_next = g_00_array[n+1]/g_rr_array[n+1]
@@ -66,9 +71,11 @@ def kg_find_epsilon_u(A_array, B_array):
             coeff_matrix[n, n-1] = Fs[n]
     
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
-    lambda_spec = lambdas_all[LEVEL]
     u_bars = u_bars_all[:, LEVEL]
-    epsilon = lambda_spec/(1 + np.sqrt(1 + ZETA_S*lambda_spec/2))
+    epsilons = lambdas_all/(1 + np.sqrt(1 + ZETA_S*lambdas_all/2))
+    print(f"    all epsilon e-vals: {epsilons}\n")
+    #epsilon = epsilons[LEVEL]
+    epsilon = np.min(epsilons)
     return epsilon, u_bars
 
 
@@ -88,12 +95,18 @@ def gr_find_R_tildes_and_primes(u_bars, zetas, A_array):
         derivatives: 1d np array
     '''
     g_00_array = np.exp(2*A_array)
-    R_tildes = (u_bars)*np.sqrt(g_00_array)/zetas
+
+    # calculate R~ and avoid division by zeros from zeta vals
+    R_tildes = np.zeros_like(zetas)
+    non_zeros_mask = zetas != 0
+    R_tildes[non_zeros_mask] = (u_bars[non_zeros_mask]*np.sqrt(g_00_array[non_zeros_mask])/zetas[non_zeros_mask])
+    
+    # calculate dR~
     size = len(R_tildes)
     derivatives = np.zeros(size)
     for i in range(size):
-        if i != 0 or i != size-1:
-            derivatives[i] = (R_tildes[i+1] - R_tildes[i-1])/(zetas[i+1] - zetas[i-1])
+        if i != 0 and i != size-1:
+            derivatives[i] = (R_tildes[i+1] - R_tildes[i-1])/(2*DELTA)
         else:
             derivatives[i] = 0
     return R_tildes, derivatives
@@ -165,14 +178,20 @@ def main():
     #initialize dynamic variables
     A_array = np.zeros(N_MAX)
     B_array = np.zeros(N_MAX)
-    epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array)
-    R_tilde_array, dR_tilde_array = gr_find_R_tildes_and_primes(u_bar_array, ZETA_VALS, A_array)
 
-    A_array, B_array = gr_RK2(epsilon, R_tilde_array, dR_tilde_array)
+    u_bar_plot_vals = np.zeros((ITERATIONS, N_MAX))
+    for i in range(ITERATIONS):
+        print(f"\n\n----- In iteration number {i+1}:\n")
+        epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array)
+        R_tilde_array, dR_tilde_array = gr_find_R_tildes_and_primes(u_bar_array, ZETA_VALS, A_array)
 
-    print(f"Calculated epsilon value: {epsilon}\n")
-    print(f"A vals: {A_array}\nB vals: {B_array}")
+        A_array, B_array = gr_RK2(epsilon, R_tilde_array, dR_tilde_array)
+        u_bar_plot_vals[i, :] = u_bar_array
 
+        print(f"    Calculated (lowest) epsilon value: {epsilon}\n")
+        print(f"    A vals: {A_array}\nB vals: {B_array}\n")
 
+    plt.plot(ZETA_VALS, u_bar_plot_vals[ITERATIONS-1, :])
+    plt.show()
 
 _ = main()
