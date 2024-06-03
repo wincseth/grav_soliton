@@ -5,11 +5,16 @@ import matplotlib.pyplot as plt
 NUM_ZETA_INTERVALS = 100 # number of zeta intervals, length of the n arrays - 1
 LEVEL = 1 # which energy (e-val) and u bar set (e-vec) to use
 ZETA_S = 0.5
-ZETA_MAX = 10
+ZETA_MAX = 20
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 20 # how many times to run through the equations
+ITERATIONS = 10 # how many times to run through the equations
+
+G_GRAV = 6.7e-39
+M_MASS = 8.2e10
+A_BOHR = 1/(G_GRAV*M_MASS**3)
+
 print(f"length of zeta array: {len(ZETA_VALS)}")
 # Klein Gordon equation solver ----------------------------------------------------
 def kg_find_coeffs(A_array, B_array):
@@ -59,9 +64,12 @@ def kg_find_epsilon_u(A_array, B_array):
     array of u bar values, both according to global
     LEVEL parameter.
     '''
-    
+    g_00_array = np.exp(2*A_array)
+    g_rr_array = np.exp(2*B_array)
+
     coeff_matrix = np.zeros((N_MAX, N_MAX))
     Cs, Ds, Fs = kg_find_coeffs(A_array, B_array)
+    #print(f"all C's: {Cs}\nall D's: {Ds}\nall F's: {Fs}")
     for n in range(0, N_MAX):
         #C_n, D_n = kg_find_coeff(n+1, DELTA, A, B)
         coeff_matrix[n, n] = Cs[n]
@@ -71,11 +79,19 @@ def kg_find_epsilon_u(A_array, B_array):
             coeff_matrix[n, n-1] = Fs[n]
     
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
-    u_bars = u_bars_all[:, LEVEL]
     epsilons = lambdas_all/(1 + np.sqrt(1 + ZETA_S*lambdas_all/2))
-    print(f"    all epsilon e-vals: {epsilons}\n")
+    #print(f"    all epsilon e-vals: {epsilons}\n")
+    print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
     #epsilon = epsilons[LEVEL]
+    #u_bars = u_bars_all[:, LEVEL]
     epsilon = np.min(epsilons)
+    u_bars = u_bars_all[:, np.argmin(epsilons)]
+
+    #normalize and set boundary conditions for u bar
+    norm = np.sum(g_rr_array * u_bars**2 / np.sqrt(g_00_array)) * DELTA
+    u_bars /= np.sqrt(norm)
+    u_bars[0]  = u_bars[N_MAX-1] = 0
+
     return epsilon, u_bars
 
 
@@ -109,6 +125,7 @@ def gr_find_R_tildes_and_primes(u_bars, zetas, A_array):
             derivatives[i] = (R_tildes[i+1] - R_tildes[i-1])/(2*DELTA)
         else:
             derivatives[i] = 0
+    print(f"square of derivatives of R~: {derivatives**2}")
     return R_tildes, derivatives
 
 # used in RK2
@@ -173,13 +190,19 @@ plt.grid(True)
 plt.show()
 '''
 
+    
+
 # Main function that brings it together
 def main():
     #initialize dynamic variables
     A_array = np.zeros(N_MAX)
     B_array = np.zeros(N_MAX)
 
+    #temp vars for plotting
     u_bar_plot_vals = np.zeros((ITERATIONS, N_MAX))
+    epsilon_plot_vals = np.zeros(ITERATIONS)
+
+    #iterate through equations until convergence
     for i in range(ITERATIONS):
         print(f"\n\n----- In iteration number {i+1}:\n")
         epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array)
@@ -189,9 +212,18 @@ def main():
         u_bar_plot_vals[i, :] = u_bar_array
 
         print(f"    Calculated (lowest) epsilon value: {epsilon}\n")
-        print(f"    A vals: {A_array}\nB vals: {B_array}\n")
+        epsilon_plot_vals[i] = epsilon
+        #print(f"    A vals: {A_array}\nB vals: {B_array}\n")
 
-    plt.plot(ZETA_VALS, u_bar_plot_vals[ITERATIONS-1, :])
+    g_00_array = np.exp(2*A_array)
+    g_rr_array = np.exp(2*B_array)
+
+    u_bars_final = u_bar_plot_vals[ITERATIONS-1, :]
+    u_plot_final = u_bars_final*np.sqrt(g_00_array/(g_rr_array*A_BOHR))
+    u_plot_final = u_plot_final*np.sqrt(A_BOHR*g_rr_array/np.sqrt(g_00_array))
+    plt.plot(ZETA_VALS, u_plot_final)
+    #plt.plot(range(ITERATIONS), epsilon_plot_vals)
+    plt.grid(True)
     plt.show()
 
 _ = main()
