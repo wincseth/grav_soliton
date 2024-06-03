@@ -9,12 +9,13 @@ Created on Tue May 21 09:36:13 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 n_int = 100
-zetta_max = 10
-zetta_sn = [.01, .1, .5]
+zetta_max = 35
+zetta_sn = [0.01, 0.1, 0.2, 0.5, 1]
 delta = zetta_max/(n_int+1)
 zetta_n = np.arange(0, zetta_max, delta)
-Rounds = 100
+Rounds = 20
 n = len(zetta_n)
 A = np.zeros(n)
 B = np.zeros(n)
@@ -46,12 +47,13 @@ def finite_differences(A, B):
     u_bar = np.sqrt(goo/grr)*u_bar
     norm = sum(grr*u_bar**2/np.sqrt(goo))
     u_bar /= np.sqrt(norm*delta)
+    u_bar[0] = 0
     return [epsilon, u_bar]
 
 def radial_function(u, A, zetta):
-    R = np.zeros(len(u))
+    R = np.zeros_like(u)
     use = np.where(zetta != 0)
-    R[use] = np.sqrt(np.exp(2*A[use]))*u[use]/(zetta_n[use])
+    R[use] = np.sqrt(np.sqrt(np.exp(2*A[use])/np.exp(2*B[use])))*u[use]/(zetta_n[use])
     return R
 
 def der_of_R(R):
@@ -63,8 +65,7 @@ def der_of_R(R):
         dR[i] = (R[i+1]-R[i-1])/(2*delta)
     return(dR)
 
-def temp(A, B, R, dR, n, epsilon):
-    zetta = n*delta
+def temp(A, B, R, dR, epsilon, zetta):
     goo = np.exp(2*A)
     grr = np.exp(2*B)
     common = (zetta_s*zetta/4)*(1+zetta_s*epsilon/2)**2*(grr/goo)*R**2
@@ -77,11 +78,16 @@ def Runge_Kutta(R, dR, epsilon):
     A = np.zeros(len(R))
     B = np.zeros(len(R))
     for i in range(len(R)-1):
-        A_temp = A[i] + delta*temp(A[i], B[i], R[i], dR[i], n, epsilon)[0]
-        B_temp = B[i] + delta*temp(A[i], B[i], R[i], dR[i], n, epsilon)[1]
+        if i == 0:
+            A[i] = 0
+            B[i] = 0
+            continue
         
-        A[i+1] = A[i] + (delta/2)*(A_temp-A[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], n+1, epsilon)[0])
-        B[i+1] = B[i] + (delta/2)*(B_temp-B[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], n+1, epsilon)[1])
+        A_temp = A[i] + delta*temp(A[i], B[i], R[i], dR[i], epsilon, zetta_n[i])[0]
+        B_temp = B[i] + delta*temp(A[i], B[i], R[i], dR[i], epsilon, zetta_n[i])[1]
+        
+        A[i+1] = A[i] + (delta/2)*(A_temp-A[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[0])
+        B[i+1] = B[i] + (delta/2)*(B_temp-B[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[1])
     return [A, B]
 
 plt.figure(figsize=(9,9))
@@ -95,7 +101,8 @@ for j in range(len(zetta_sn)):
         A, B = Runge_Kutta(R, dR, epsilon)
         print("e: ", epsilon)
     epsilons[j] = epsilon
-    plt.plot(zetta_n, abs(eigen_vec)) 
+    plt.plot(zetta_n, abs(eigen_vec), label=f'u of {zetta_sn[j]}') 
+plt.legend()
 print(epsilons)
     
   
