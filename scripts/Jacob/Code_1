@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 #global variables
-n = 100
+n = 500
 ZETA_MAX = 20
 ZETA_MIN = 0
-DELTA =(ZETA_MAX - ZETA_MIN)/n
+DELTA =(ZETA_MAX)/(n + 1)
 ZETA = np.arange(ZETA_MIN, ZETA_MAX, DELTA) #initializing ZETA values arange(begin, end, stepsize)
-ZETA_S = 0.5 #initialized from some eigenvalues
+ZETA_S = 0.1 #initialized from some eigenvalues
+N_max = len(ZETA)
 G = 6.7*10**(-39) #normalized gravity
 M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2*10**10 #if a equals the atomic Bohr radius
@@ -14,9 +15,7 @@ M = 8.2*10**10 #if a equals the atomic Bohr radius
 #grr = 1/g00 #radial metric in terms of zeta's
 a = 1 /(G*M**3)#gravitational bohr radius
 R_S = 2*G*M #schwarzschild radius
-level = 0#array of lambda
-loops = 100
-
+loops = 20
 
 #functions
 def metric(A, B):
@@ -25,78 +24,71 @@ def metric(A, B):
     grr = np.exp(2*B) #radial metric
     return g00, grr
 
-
 def KG_values(g00, grr, A_array):
     '''perameters are array's
     returns are arrays'''
-    C = np.zeros(n)
-    D = np.zeros(n)
-    F = np.zeros(n)
+    C = np.zeros(N_max)
+    D = np.zeros(N_max)
+    F = np.zeros(N_max)
     '''parameters: g00 and grr are inpute as a 1-d array'''
     if np.any(ZETA == 0):
-        H = np.zeros(n) #need to make into an 1-d array of zeros, n coloumns
+        H = np.zeros(N_max) #need to make into an 1-d array of zeros, n coloumns
     else:
         H = (ZETA_S**2)/(4*(ZETA**2)*(ZETA**2 - ZETA_S**2))  # this is h_~"/h_~ = H
-    for i in range(n):
+    for i in range(N_max):
         C[i] = (-(g00[i]/grr[i])*H[i] + (4/ZETA_S)*np.exp(A_array[i])*np.sinh(A_array[i]) + 2*((g00[i]/grr[i])/(DELTA**2)))
         if i == 0:
             D[i] = -np.sqrt((g00[i]*g00[i+1])/(grr[i]*grr[i+1]))/(DELTA**2)
-        elif i != n-1:
+        elif i != N_max-1:
             D[i] = -np.sqrt((g00[i]*g00[i+1])/(grr[i]*grr[i+1]))/(DELTA**2)
             F[i] = -np.sqrt((g00[i]*g00[i-1])/(grr[i]*grr[i-1]))/(DELTA**2)
-        elif i == n-1:
+        elif i == N_max-1:
             F[i] = -np.sqrt((g00[i]*g00[i-1])/(grr[i]*grr[i-1]))/(DELTA**2)
     return C, D, F
 
-
 def KG_matrix(C, D, F):
     '''initalizes matrix'''
-    matrix = np.zeros((n,n))#setting a nxn matrix all zero meshgrid
-    for i in range(n):    
+    matrix = np.zeros((N_max,N_max))#setting a nxn matrix all zero meshgrid
+    for i in range(N_max):    
         matrix[i,i] = C[i]
-        if i < n - 1:
+        if i < N_max - 1:
             matrix[i, i+1] = D[i]
         if i > 1:
             matrix[i, i-1] = F[i]
     return matrix
 
-
-def KG_solver(matrix):
+def KG_solver(matrix, grr, g00):
     '''returns: epsilon and lmabda as floats, u_bar is a 1-d array'''
     e_vals, e_vecs = np.linalg.eig(matrix)#e_vals are lamdas, e_vecs are ubars
     lamda = min(e_vals)
     u_bar = e_vecs[:, np.argmin(e_vals)]
     epsilon = lamda/(1 + np.sqrt(1 + (ZETA_S*lamda)/2))
+    norm = np.sum(grr * u_bar**2 / np.sqrt(g00)) * DELTA #normalizes u_bar
+    u_bar /= np.sqrt(norm)
+    u_bar[0] = u_bar[N_max-1] = 0
     return epsilon, lamda, u_bar
-
 
 def h_tilde(g00, grr):
     '''h_tilde is an array'''
     h_tilde = ZETA**np.sqrt(np.sqrt(g00/grr))
     return h_tilde
 
-
 def R_tilde(g00, u):
     '''input is an array and output is an array'''
-    R_tilde = np.zeros(n)
+    R_tilde = np.zeros(N_max)
     non_zero_mask = ZETA != 0
-    '''print("g00", len(g00))
-    print("u= ",len(u))
-    print("ZETA= ",len(ZETA))'''
-    R_tilde[non_zero_mask] = np.sqrt(g00[non_zero_mask]) * u[non_zero_mask] / ZETA[non_zero_mask]**2
+    R_tilde[non_zero_mask] = np.sqrt(g00[non_zero_mask]) * u[non_zero_mask] / ZETA[non_zero_mask]
     return R_tilde
-
 
 def dR_tilde(R):
     '''input is an array and output is an array '''
     dR_tilde = np.zeros(len(R))
-    for i in range(len(R)):
-        if i == n-1 or i == 0:
+    for i in range(len(R)- 1):
+        if i == N_max-1 or i == 0:
             dR_tilde[i] = 0
             continue
         dR_tilde[i] = (R[i+1] - R[i-1])/(2*DELTA)
     return(dR_tilde)
-
 
 def temp_slope(zeta, R, dR, g00, grr, e):
     '''input single values
@@ -115,18 +107,13 @@ def temp_slope(zeta, R, dR, g00, grr, e):
         print("grr", grr)
         print("R =", R)
         print("R_temp= ", R)'''
-    
-    #print("dA_temp= ", dA )
-   #print("dB_temp= ", dB)
-
     return dA, dB
-
 
 def R_K(R, dR, g00, grr, e):
     '''parameters all arrays except e
     return two arrays A's and B's'''
-    A = np.zeros(n)
-    B = np.zeros(n)
+    A = np.zeros(N_max)
+    B = np.zeros(N_max)
     for i in range(len(R)-1):
         if i == 0:
             A_temp = 0
@@ -138,20 +125,17 @@ def R_K(R, dR, g00, grr, e):
         grr_temp = np.exp(2*B_temp)
         A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, e)[0])
         B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, e)[1])
-        '''print("g00_temp", g00_temp)
-        print("grr_temp", grr_temp)'''
+        
     return [A, B]
-
 
 def U_final(g00, grr,u):
    # h = a * ZETA/ grr
     U_final = (u/np.sqrt(a))*np.sqrt(g00/grr)
     return U_final
 
-
 def main():
-    A_array = np.zeros(n) #dynamic variables
-    B_array = np.zeros(n) #dynamic variables
+    A_array = np.zeros(N_max) #dynamic variables
+    B_array = np.zeros(N_max) #dynamic variables
 
     for i in range(loops):#e= epsilon, u = ubar
         g00, grr = metric(A_array, B_array)
@@ -160,7 +144,7 @@ def main():
         print('B= ', B_array)'''
         C,D,F = KG_values(g00, grr, A_array)#j= epsilon, k= e_vec
         matrix = KG_matrix(C, D, F)
-        e, j, u = KG_solver(matrix)
+        e, j, u = KG_solver(matrix, g00, grr)
         R = R_tilde(g00, u)
         dR = dR_tilde(R)
         '''print("R_tilde", R)
@@ -175,10 +159,9 @@ def main():
         print('B= ', B_array)'''
         print("e= ", e)
         U = U_final(g00, grr,u)
+        U_abs = abs(U)
         print("U= ", U)
-    plt.plot(ZETA, U, marker= 'o')
+    plt.plot(ZETA, U_abs, marker= 'o')
     plt.grid(True)
     plt.show()
 _ = main()
-
-
