@@ -3,15 +3,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 #global variables-----------------------------------------------------------------
-    
-    #users input for the code
-n = 500 #interval step
+
+#users input for the code
+n = 200 #interval step
 ZETA_MAX = 50 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
-ZETA_S = .01 #how relativistic the function is
+#ZETA_S = [.01, .1, .2, 0.5, 1] #how relativistic the function is
 loops = 20 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
-    #global variables after user input
+#global variables after user input
 DELTA =(ZETA_MAX)/(n + 1)
 ZETA = np.arange(ZETA_MIN, ZETA_MAX, DELTA) #initializing ZETA values arange(begin, end, stepsize)
 N_max = len(ZETA)#set up the size of the matrix's
@@ -31,7 +31,7 @@ def metric(A, B):
     grr = np.exp(2*B) #radial metric
     return g00, grr
 
-def KG_values(g00, grr, A_array):
+def KG_values(g00, grr, A_array, ZETA_S):
     '''perameters are array's of dimension N_max
     returns are arrays'''
     C = np.zeros(N_max)
@@ -63,7 +63,7 @@ def KG_matrix(C, D, F):
             matrix[i, i-1] = F[i]
     return matrix
 
-def KG_solver(matrix, grr, g00):
+def KG_solver(matrix, grr, g00, ZETA_S):
     '''Parameters: returns: epsilon and lmabda as floats, u_bar is a 1-d array
         returns U_bar as an array and epsilon as a schalar '''
     e_vals, e_vecs = np.linalg.eig(matrix)#e_vals are lamdas, e_vecs are ubars
@@ -75,11 +75,6 @@ def KG_solver(matrix, grr, g00):
     u_bar /= np.sqrt(norm)
     u_bar[0] = u_bar[N_max-1] = 0
     return epsilon, u_bar
-
-def h_tilde(g00, grr):
-    '''h_tilde is an array'''
-    h_tilde = ZETA**np.sqrt(np.sqrt(g00/grr))
-    return h_tilde
 
 def R_tilde(g00, u):
     '''input is an array and output is an array'''
@@ -99,7 +94,7 @@ def dR_tilde(R):
         dR_tilde[i] = (R[i+1] - R[i-1])/(2*DELTA)
     return(dR_tilde)
 
-def temp_slope(zeta, R, dR, g00, grr, e):
+def temp_slope(zeta, R, dR, g00, grr, ZETA_S, e):
     '''input single values
     return is single values'''
     if zeta == 0:
@@ -110,7 +105,7 @@ def temp_slope(zeta, R, dR, g00, grr, e):
         dB = -(grr-1)/(2*zeta) + (ZETA_S*zeta*grr*R**2)/4 + ((ZETA_S**2)*zeta/8)*(dR)**2 + (ZETA_S*zeta/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00) * (R)**2
     return dA, dB
 
-def R_K(R, dR, g00, grr, e):
+def R_K(R, dR, g00, grr, ZETA_S, e):
     '''parameters all arrays except e
     return two arrays A's and B's'''
     A = np.zeros(N_max)
@@ -120,12 +115,12 @@ def R_K(R, dR, g00, grr, e):
             A_temp = 0
             B_temp = 0
         else:
-            A_temp = A[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], e)[0]
-            B_temp = B[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], e)[1]
+            A_temp = A[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], ZETA_S, e)[0]
+            B_temp = B[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], ZETA_S, e)[1]
         g00_temp = np.exp(2*A_temp)
         grr_temp = np.exp(2*B_temp)
-        A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, e)[0])
-        B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, e)[1])
+        A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, ZETA_S, e)[0])
+        B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, ZETA_S, e)[1])
     return [A, B]
 
 def U_final(g00, grr,u):
@@ -136,20 +131,25 @@ def U_final(g00, grr,u):
 def main():
     A_array = np.zeros(N_max) #dynamic variables
     B_array = np.zeros(N_max) #dynamic variables
-
-    for i in range(loops):#e= epsilon, u = ubar
-        g00, grr = metric(A_array, B_array)
-        C,D,F = KG_values(g00, grr, A_array)#j= epsilon, k= e_vec
-        matrix = KG_matrix(C, D, F)
-        e, u = KG_solver(matrix, g00, grr)
-        R = R_tilde(g00, u)
-        dR = dR_tilde(R)
-        A_array, B_array = R_K(R, dR, g00, grr, e)
-        print("e= ", e)
-        U = U_final(g00, grr,u)
-        U_abs = abs(U)
+    zeta_s = [.01, .1, .2, 0.5, 1] #how relativistic the function is
+    for j, zetta_s_current in enumerate(zeta_s):
+        ZETA_S = zeta_s[j] 
+        for i in range(loops):#e= epsilon, u = ubar
+            g00, grr = metric(A_array, B_array)
+            C,D,F = KG_values(g00, grr, A_array, ZETA_S)#j= epsilon, k= e_vec
+            matrix = KG_matrix(C, D, F)
+            e, u = KG_solver(matrix, g00, grr, ZETA_S)
+            R = R_tilde(g00, u)
+            dR = dR_tilde(R)
+            A_array, B_array = R_K(R, dR, g00, grr, ZETA_S, e)
+            print("e= ", e)
+            U = U_final(g00, grr,u)
+            U_abs = abs(U)
+        #print("A= ",A_array)
+        #print("B= ",B_array)
         print("U= ", U)
-    plt.plot(ZETA, U_abs, marker= 'o')
-    plt.grid(True)
+        plt.plot(ZETA, U_abs, label=zetta_s_current)
+        plt.grid(True)
+        plt.legend()
     plt.show()
 _ = main()
