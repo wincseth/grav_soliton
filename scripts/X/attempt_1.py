@@ -10,12 +10,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-n_int = 100
-zetta_max = 35
-zetta_sn = [0.01, 0.1, 0.2, 0.5, 1]
+n_int = 250
+zetta_max = 60
+zetta_sn = [0.01, .1, .5, 1]
+colors = ["red", 'orange', 'yellow', 'green', 'blue']
 delta = zetta_max/(n_int+1)
 zetta_n = np.arange(0, zetta_max, delta)
-Rounds = 20
+Rounds = 50
+G = 6.7*10**(-39) #normalized gravity
+M_PL = 1 / np.sqrt(G) #mass of plank mass
+M = 8.2*10**10
+a = 1 /(G*M**3)
 n = len(zetta_n)
 A = np.zeros(n)
 B = np.zeros(n)
@@ -69,7 +74,7 @@ def temp(A, B, R, dR, epsilon, zetta):
     goo = np.exp(2*A)
     grr = np.exp(2*B)
     common = (zetta_s*zetta/4)*(1+zetta_s*epsilon/2)**2*(grr/goo)*R**2
-    A_temp =(1/(2*zetta))*(grr-1)-(zetta_s*zetta/4)*grr*R**2+(zetta_s**2*zetta/8)*dR**2+common
+    A_temp =(1/(2*zetta))*(grr-1)-((zetta_s*zetta/4)*grr*(R**2))+(zetta_s**2*zetta/8)*dR**2+common
     B_temp =-(1/(2*zetta))*(grr-1)+(zetta_s*zetta/4)*grr*R**2+(zetta_s**2*zetta/8)*dR**2+common
     return [A_temp, B_temp]
 
@@ -90,8 +95,14 @@ def Runge_Kutta(R, dR, epsilon):
         B[i+1] = B[i] + (delta/2)*(B_temp-B[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[1])
     return [A, B]
 
+def U_final(g00, grr,u):
+    U_final = (u/np.sqrt(a))*np.sqrt(g00/grr)
+    return U_final
+
 plt.figure(figsize=(9,9))
 epsilons = np.zeros_like(zetta_sn)
+A_final = np.zeros((len(zetta_sn), len(A)))
+B_final = np.zeros((len(zetta_sn), len(A)))
 for j in range(len(zetta_sn)):
     zetta_s = zetta_sn[j]
     for i in range(Rounds):
@@ -100,12 +111,21 @@ for j in range(len(zetta_sn)):
         dR = der_of_R(R)
         A, B = Runge_Kutta(R, dR, epsilon)
         print("e: ", epsilon)
+    U = U_final(np.exp(2*A), np.exp(2*B), eigen_vec)
     epsilons[j] = epsilon
-    plt.plot(zetta_n, abs(eigen_vec), label=f'u of {zetta_sn[j]}') 
+    A_final[j] = A
+    B_final[j] = B
+    plt.plot(zetta_n, abs(eigen_vec), label=f'zeta_s value of {zetta_sn[j]}') 
 plt.legend()
 print(epsilons)
     
   
 plt.figure(figsize=(9,9))
-plt.plot(zetta_n, np.exp(2*A))
-plt.plot(zetta_n, np.exp(2*B))
+for j in range(len(zetta_sn)):
+    plt.plot(zetta_n, np.exp(2*A_final[j]), label=f'zeta_s value of {zetta_sn[j]}')
+plt.legend()
+
+plt.figure(figsize=(9,9))
+for j in range(len(zetta_sn)):
+    plt.plot(zetta_n, np.exp(2*B_final[j]), label=f'zeta_s value of {zetta_sn[j]}')
+plt.legend()
