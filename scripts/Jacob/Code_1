@@ -63,7 +63,7 @@ def KG_matrix(C, D, F):
             matrix[i, i-1] = F[i]
     return matrix
 
-def KG_solver(matrix, grr, g00, ZETA_S):
+def KG_solver(matrix, grr, g00, ZETA_S, ZETA):
     '''Parameters: returns: epsilon and lmabda as floats, u_bar is a 1-d array
         returns U_bar as an array and epsilon as a schalar '''
     e_vals, e_vecs = np.linalg.eig(matrix)#e_vals are lamdas, e_vecs are ubars
@@ -92,7 +92,7 @@ def dR_tilde(R):
             dR_tilde[i] = 0
             continue
         dR_tilde[i] = (R[i+1] - R[i-1])/(2*DELTA)
-    return(dR_tilde)
+    return dR_tilde
 
 def temp_slope(zeta, R, dR, g00, grr, ZETA_S, e):
     '''input single values
@@ -138,7 +138,7 @@ def main():
             g00, grr = metric(A_array, B_array)
             C,D,F = KG_values(g00, grr, A_array, ZETA_S)#j= epsilon, k= e_vec
             matrix = KG_matrix(C, D, F)
-            e, u = KG_solver(matrix, g00, grr, ZETA_S)
+            e, u = KG_solver(matrix, g00, grr, ZETA_S, ZETA)
             R = R_tilde(g00, u)
             dR = dR_tilde(R)
             A_array, B_array = R_K(R, dR, g00, grr, ZETA_S, e)
@@ -152,6 +152,7 @@ def main():
         plt.plot(ZETA, U_abs, label=zetta_s_current)
         plt.xlabel("ZETA")
         plt.ylabel("U_bar")
+        plt.legend()
         plt.grid(True)
         plt.figure(2)
         plt.subplot(211)
@@ -164,6 +165,11 @@ def main():
         plt.xlabel("ZETA")
         plt.ylabel("B_array")
         plt.grid(True)
+        plt.figure(3)
+        plt.plot(ZETA, R, label=zetta_s_current)
+        plt.xlabel("ZETA")
+        plt.ylabel("R_TILDE")
         plt.legend()
+        plt.grid(True)
     plt.show()
 _ = main()
