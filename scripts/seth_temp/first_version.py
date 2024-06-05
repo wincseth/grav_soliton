@@ -2,14 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 100 # number of zeta intervals, length of the n arrays - 1
+NUM_ZETA_INTERVALS = 600 # number of zeta intervals, length of the n arrays - 1
 LEVEL = 1 # which energy (e-val) and u bar set (e-vec) to use
 ZETA_S = 0.5
-ZETA_MAX = 20
+ZETA_MAX = 150
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 10 # how many times to run through the equations
+ITERATIONS = 30 # how many times to run through the equations
 
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
@@ -81,14 +81,14 @@ def kg_find_epsilon_u(A_array, B_array):
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
     epsilons = lambdas_all/(1 + np.sqrt(1 + ZETA_S*lambdas_all/2))
     #print(f"    all epsilon e-vals: {epsilons}\n")
-    print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
+    #print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
     #epsilon = epsilons[LEVEL]
     #u_bars = u_bars_all[:, LEVEL]
     epsilon = np.min(epsilons)
     u_bars = u_bars_all[:, np.argmin(epsilons)]
 
     #normalize and set boundary conditions for u bar
-    norm = np.sum(g_rr_array * u_bars**2 / np.sqrt(g_00_array)) * DELTA
+    norm = np.sum(np.sqrt(g_00_array)*u_bars**2) * DELTA
     u_bars /= np.sqrt(norm)
     u_bars[0]  = u_bars[N_MAX-1] = 0
 
@@ -125,7 +125,7 @@ def gr_find_R_tildes_and_primes(u_bars, zetas, A_array):
             derivatives[i] = (R_tildes[i+1] - R_tildes[i-1])/(2*DELTA)
         else:
             derivatives[i] = 0
-    print(f"square of derivatives of R~: {derivatives**2}")
+    #print(f"square of derivatives of R~: {derivatives**2}")
     return R_tildes, derivatives
 
 # used in RK2
@@ -137,8 +137,7 @@ def gr_find_AB_slope(A_current, B_current, n, epsilon, Rt, dRt):
     for all A(zeta) and B(zeta).
     '''
     zeta = n*DELTA
-    common_term = ((ZETA_S**2)*zeta/8)*(dRt**2)
-    + (ZETA_S*zeta/4)*((1 + ZETA_S*epsilon/2)**2)*(np.exp(2*B_current-2*A_current))*(Rt**2)
+    common_term = ((ZETA_S**2)*zeta/8)*(dRt**2) + (ZETA_S*zeta/4)*((1 + ZETA_S*epsilon/2)**2)*(np.exp(2*B_current-2*A_current))*(Rt**2)
     if zeta != 0:
         slope_A = (np.exp(2*B_current) - 1)/(2*zeta) - ((ZETA_S*zeta)/4)*np.exp(2*B_current)*(Rt**2) + common_term
         slope_B = -(np.exp(2*B_current) - 1)/(2*zeta) + ((ZETA_S*zeta)/4)*np.exp(2*B_current)*(Rt**2) + common_term
@@ -163,34 +162,13 @@ def gr_RK2(epsilon, Rt_array, dRt_array):
         slope_A_n, slope_B_n = gr_find_AB_slope(A_n, B_n, n, epsilon, Rt_n, dRt_n)
         A_temp = A_n + DELTA*slope_A_n
         B_temp = B_n + DELTA*slope_B_n
-        slope_A_temp, slope_B_temp = gr_find_AB_slope(A_temp, B_temp, n+1, epsilon, Rt_n, dRt_n)
+        slope_A_temp, slope_B_temp = gr_find_AB_slope(A_temp, B_temp, n+1, epsilon, Rt_array[n+1], dRt_array[n+1])
         
         # RK2 method
         A_array[n+1] = A_n + (DELTA/2)*(slope_A_n + slope_A_temp)
         B_array[n+1] = B_n + (DELTA/2)*(slope_B_n + slope_B_temp)
     
     return A_array, B_array
-
-'''
-print(f"some slope: {gr_find_AB_slope(0, 0, 1, 1, 1, 1)}")
-#try n = 1
-c_1, d_1 = kg_find_coeff(1, 0.01, 0, 0)
-print(f"C coefficient for n=1: {c_1}")
-'''
-
-'''
-d_zeta = 0.0001
-zetas = np.arange(0, 0.009, d_zeta)
-y_vals, u_bars = kg_find_epsilons(len(zetas), d_zeta, 0, 0)
-print(f"number of zetas: {len(zetas)}")
-print(f"epsilon values: {y_vals}")
-print(f"u bar values: {u_bars}")
-plt.plot(zetas, y_vals)
-plt.grid(True)
-plt.show()
-'''
-
-    
 
 # Main function that brings it together
 def main():
@@ -218,10 +196,11 @@ def main():
     g_00_array = np.exp(2*A_array)
     g_rr_array = np.exp(2*B_array)
 
-    u_bars_final = u_bar_plot_vals[ITERATIONS-1, :]
-    u_plot_final = u_bars_final*np.sqrt(g_00_array/(g_rr_array*A_BOHR))
-    u_plot_final = u_plot_final*np.sqrt(A_BOHR*g_rr_array/np.sqrt(g_00_array))
-    plt.plot(ZETA_VALS, u_plot_final)
+    #u_bars_final = u_bar_plot_vals[ITERATIONS-1, :]
+    #u_plot_final = u_bars_final*np.sqrt(g_00_array/(g_rr_array*A_BOHR))
+    #u_plot_final = u_plot_final*np.sqrt(A_BOHR*g_rr_array/np.sqrt(g_00_array))
+    plt.plot(ZETA_VALS, abs(u_bar_array))
+    plt.xlim(0, 20)
     #plt.plot(range(ITERATIONS), epsilon_plot_vals)
     plt.grid(True)
     plt.show()
