@@ -10,19 +10,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-n_int = 250
-zetta_max = 60
-zetta_sn = [0.01, .1, .5, 1]
+n_int = 400
+zetta_max = 150
+zetta_sn = [0.01, .1, .2, .5, 1]
 colors = ["red", 'orange', 'yellow', 'green', 'blue']
 delta = zetta_max/(n_int+1)
 zetta_n = np.arange(0, zetta_max, delta)
-Rounds = 50
+Rounds = 30
 G = 6.7*10**(-39) #normalized gravity
 M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2*10**10
 a = 1 /(G*M**3)
 n = len(zetta_n)
-A = np.zeros(n)
+A = np.linspace(0, -1, n)
 B = np.zeros(n)
 
 #Finite differences attempt 1
@@ -45,13 +45,13 @@ def finite_differences(A, B):
             E = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i-1]/grr[i-1])/(delta**2)
             matrix[i, i-1] = E
     eigenvalues, eigenvectors = np.linalg.eig(matrix) #getting the eigenvalues and eigenvectors
-    N = np.argmin(eigenvalues)
+    N = np.argmin(abs(eigenvalues))
     print(N, eigenvalues[N])
     epsilon = eigenvalues[N]/(1+np.sqrt(1+zetta_s*eigenvalues[N]/2))
     u_bar = eigenvectors[:, N]
     u_bar = np.sqrt(goo/grr)*u_bar
-    norm = sum(grr*u_bar**2/np.sqrt(goo))
-    u_bar /= np.sqrt(norm*delta)
+    norm = sum(np.sqrt(goo)*u_bar**2*delta)
+    u_bar /= np.sqrt(norm)
     u_bar[0] = 0
     return [epsilon, u_bar]
 
@@ -115,7 +115,9 @@ for j in range(len(zetta_sn)):
     epsilons[j] = epsilon
     A_final[j] = A
     B_final[j] = B
-    plt.plot(zetta_n, abs(eigen_vec), label=f'zeta_s value of {zetta_sn[j]}') 
+    plt.plot(zetta_n, abs(eigen_vec), label=f'zeta_s value of {zetta_sn[j]}')
+ax = plt.gca()
+ax.set_xlim([0, 25])
 plt.legend()
 print(epsilons)
     
