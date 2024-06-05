@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 #global variables-----------------------------------------------------------------
 
 #users input for the code
-n = 200 #interval step
-ZETA_MAX = 50 #maximum zeta value
+n = 1000 #interval step
+ZETA_MAX = 100 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
-#ZETA_S = [.01, .1, .2, 0.5, 1] #how relativistic the function is
-loops = 20 #number of loops the program will iterate through
+loops = 50 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
 #global variables after user input
 DELTA =(ZETA_MAX)/(n + 1)
@@ -34,7 +33,7 @@ def metric(A, B):
 def KG_values(g00, grr, A_array, ZETA_S):
     '''perameters are array's of dimension N_max
     returns are arrays'''
-    C = np.zeros(N_max)
+    C = np.zeros(N_max)#initalizes our matricies with 0 to calculate the next step
     D = np.zeros(N_max)
     F = np.zeros(N_max)
     if np.any(ZETA == 0):
@@ -58,23 +57,23 @@ def KG_matrix(C, D, F):
     for i in range(0, N_max):    
         matrix[i,i] = C[i]
         if i < N_max - 1:
-            matrix[i, i+1] = D[i]
+            matrix[i, i + 1] = D[i]
         if i > 0:
             matrix[i, i-1] = F[i]
     return matrix
 
-def KG_solver(matrix, grr, g00, ZETA_S, ZETA):
+def KG_solver(matrix, g00, ZETA_S):
     '''Parameters: returns: epsilon and lmabda as floats, u_bar is a 1-d array
         returns U_bar as an array and epsilon as a schalar '''
     e_vals, e_vecs = np.linalg.eig(matrix)#e_vals are lamdas, e_vecs are ubars
-    print("e_vals",e_vals)
-    lamda = min(e_vals)
-    u_bar = e_vecs[:, np.argmin(e_vals)]
-    epsilon = lamda/(1 + np.sqrt(1 + (ZETA_S*lamda)/2))
-    norm = np.sum(grr * u_bar**2 / np.sqrt(g00)) * DELTA #normalizes u_bar
-    u_bar /= np.sqrt(norm)
-    u_bar[0] = u_bar[N_max-1] = 0
-    return epsilon, u_bar
+    lamda = min(e_vals)#finds the minimum e_val and saves as lamda
+    u_bar = e_vecs[:, np.argmin(e_vals)]#u_bar is saved as an array of minimum values
+    epsilon = lamda/(1 + np.sqrt(1 + (ZETA_S*lamda)/2))#calculates epsilon form lamda
+    
+    norm = np.sum(np.sqrt(g00)*(u_bar**2)) #normalizes u_bar
+    u_bar_new =u_bar/(np.sqrt(norm*DELTA))#this takes u_bar and normalizes it to give us a new value of u_bar
+    u_bar_new[0] = u_bar_new[N_max-1] = 0#keeps us in bounds of the array
+    return epsilon, u_bar_new
 
 def R_tilde(g00, u):
     '''input is an array and output is an array'''
@@ -92,13 +91,13 @@ def dR_tilde(R):
             dR_tilde[i] = 0
             continue
         dR_tilde[i] = (R[i+1] - R[i-1])/(2*DELTA)
-    return dR_tilde
+    return(dR_tilde)
 
 def temp_slope(zeta, R, dR, g00, grr, ZETA_S, e):
     '''input single values
     return is single values'''
     if zeta == 0:
-        dA = 0
+        dA = 0#keeps our temp values from blowing up to infinity or being undefined
         dB = 0
     else:
         dA = (grr-1)/(2*zeta) - (ZETA_S*zeta*grr*R**2)/4 + ((ZETA_S**2)*zeta/8)*(dR)**2 + (ZETA_S*zeta/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00) * (R)**2
@@ -112,15 +111,15 @@ def R_K(R, dR, g00, grr, ZETA_S, e):
     B = np.zeros(N_max)
     for i in range(len(R)-1):
         if i == 0:
-            A_temp = 0
+            A_temp = 0#keeps our temp values from blowing up to infinity or being undefined
             B_temp = 0
         else:
             A_temp = A[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], ZETA_S, e)[0]
             B_temp = B[i] + DELTA*temp_slope(ZETA[i], R[i], dR[i], g00[i], grr[i], ZETA_S, e)[1]
         g00_temp = np.exp(2*A_temp)
         grr_temp = np.exp(2*B_temp)
-        A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, ZETA_S, e)[0])
-        B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i], dR[i], g00_temp, grr_temp, ZETA_S, e)[1])
+        A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i + 1], dR[i + 1], g00_temp, grr_temp, ZETA_S, e)[0])
+        B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i + 1], dR[i + 1], g00_temp, grr_temp, ZETA_S, e)[1])
     return [A, B]
 
 def U_final(g00, grr,u):
@@ -129,28 +128,33 @@ def U_final(g00, grr,u):
 
 #Main Function-------------------------------------------------------
 def main():
-    A_array = np.zeros(N_max) #dynamic variables
-    B_array = np.zeros(N_max) #dynamic variables
+    
     zeta_s = [.01, .1, .2, 0.5, 1] #how relativistic the function is
+    values = []
     for j, zetta_s_current in enumerate(zeta_s):
-        ZETA_S = zeta_s[j] 
+        ZETA_S = zeta_s[j]
+        A_array = np.zeros(N_max) #initializes the A_array as zeros
+        B_array = np.zeros(N_max) #initializes the B_array as zeros
         for i in range(loops):#e= epsilon, u = ubar
             g00, grr = metric(A_array, B_array)
-            C,D,F = KG_values(g00, grr, A_array, ZETA_S)#j= epsilon, k= e_vec
+            C,D,F = KG_values(g00, grr, A_array, ZETA_S)
             matrix = KG_matrix(C, D, F)
-            e, u = KG_solver(matrix, g00, grr, ZETA_S, ZETA)
+            e, u = KG_solver(matrix, g00, ZETA_S,)
+            values.append(e)
             R = R_tilde(g00, u)
             dR = dR_tilde(R)
             A_array, B_array = R_K(R, dR, g00, grr, ZETA_S, e)
-            print("e= ", e)
             U = U_final(g00, grr,u)
             U_abs = abs(U)
-        #print("A= ",A_array)
-        #print("B= ",B_array)
+        array = np.array(values)
+        min_e = np.min(array)
         print("U= ", U)
+        print("epsilon= ",array)
+        print("lowest epsilon= ", min_e)
         plt.figure(1)
         plt.plot(ZETA, U_abs, label=zetta_s_current)
         plt.xlabel("ZETA")
+        plt.xlim(0,30)
         plt.ylabel("U_bar")
         plt.legend()
         plt.grid(True)
@@ -158,16 +162,19 @@ def main():
         plt.subplot(211)
         plt.plot(ZETA, A_array)
         plt.xlabel("ZETA")
+        plt.xlim(0,30)
         plt.ylabel("A_array")
         plt.grid(True)
         plt.subplot(212)
         plt.plot(ZETA, B_array)
         plt.xlabel("ZETA")
+        plt.xlim(0,30)
         plt.ylabel("B_array")
         plt.grid(True)
         plt.figure(3)
         plt.plot(ZETA, R, label=zetta_s_current)
         plt.xlabel("ZETA")
+        plt.xlim(0,30)
         plt.ylabel("R_TILDE")
         plt.legend()
         plt.grid(True)
