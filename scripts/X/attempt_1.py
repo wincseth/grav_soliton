@@ -10,20 +10,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-n_int = 400
-zetta_max = 150
+n_int = 500
+zetta_max = 180
 zetta_sn = [0.01, .1, .2, .5, 1]
 colors = ["red", 'orange', 'yellow', 'green', 'blue']
 delta = zetta_max/(n_int+1)
 zetta_n = np.arange(0, zetta_max, delta)
-Rounds = 30
+Rounds = 50
 G = 6.7*10**(-39) #normalized gravity
 M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2*10**10
 a = 1 /(G*M**3)
 n = len(zetta_n)
-A = np.linspace(0, -1, n)
-B = np.zeros(n)
 
 #Finite differences attempt 1
 def finite_differences(A, B):
@@ -45,15 +43,15 @@ def finite_differences(A, B):
             E = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i-1]/grr[i-1])/(delta**2)
             matrix[i, i-1] = E
     eigenvalues, eigenvectors = np.linalg.eig(matrix) #getting the eigenvalues and eigenvectors
-    N = np.argmin(abs(eigenvalues))
-    print(N, eigenvalues[N])
-    epsilon = eigenvalues[N]/(1+np.sqrt(1+zetta_s*eigenvalues[N]/2))
+    #print(N, eigenvalues[N])
+    epsilon = eigenvalues/(1+np.sqrt(1+zetta_s*eigenvalues/2))
+    N = np.argmin(epsilon)
     u_bar = eigenvectors[:, N]
     u_bar = np.sqrt(goo/grr)*u_bar
     norm = sum(np.sqrt(goo)*u_bar**2*delta)
     u_bar /= np.sqrt(norm)
     u_bar[0] = 0
-    return [epsilon, u_bar]
+    return [min(epsilon), u_bar]
 
 def radial_function(u, A, zetta):
     R = np.zeros_like(u)
@@ -91,8 +89,8 @@ def Runge_Kutta(R, dR, epsilon):
         A_temp = A[i] + delta*temp(A[i], B[i], R[i], dR[i], epsilon, zetta_n[i])[0]
         B_temp = B[i] + delta*temp(A[i], B[i], R[i], dR[i], epsilon, zetta_n[i])[1]
         
-        A[i+1] = A[i] + (delta/2)*(A_temp-A[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[0])
-        B[i+1] = B[i] + (delta/2)*(B_temp-B[i]+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[1])
+        A[i+1] = A[i] + (delta/2)*(+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[0])
+        B[i+1] = B[i] + (delta/2)*(+temp(A_temp, B_temp, R[i+1], dR[i+1], epsilon, zetta_n[i+1])[1])
     return [A, B]
 
 def U_final(g00, grr,u):
@@ -101,10 +99,19 @@ def U_final(g00, grr,u):
 
 plt.figure(figsize=(9,9))
 epsilons = np.zeros_like(zetta_sn)
+A = np.zeros_like(zetta_n)
+B = np.zeros_like(zetta_n)
 A_final = np.zeros((len(zetta_sn), len(A)))
 B_final = np.zeros((len(zetta_sn), len(A)))
 for j in range(len(zetta_sn)):
     zetta_s = zetta_sn[j]
+    for i in range(n):
+        if zetta_n[i] <= zetta_s:
+            A[i] = 0
+            B[i] = 0
+        if zetta_n[i] > zetta_s:
+            A[i] = np.log(1-(zetta_s/zetta_n[i]))/2
+            B[i] = -A[i]
     for i in range(Rounds):
         epsilon, eigen_vec = finite_differences(A, B)
         R = radial_function(eigen_vec, A, zetta_n)
@@ -120,6 +127,7 @@ ax = plt.gca()
 ax.set_xlim([0, 25])
 plt.legend()
 print(epsilons)
+print(1+epsilons*zetta_s/2)
     
   
 plt.figure(figsize=(9,9))
