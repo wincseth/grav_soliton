@@ -9,7 +9,7 @@ ZETA_MAX = 150
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 30 # how many times to run through the equations
+ITERATIONS = 1 # how many times to run through the equations
 
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
@@ -69,7 +69,7 @@ def kg_find_epsilon_u(A_array, B_array):
 
     coeff_matrix = np.zeros((N_MAX, N_MAX))
     Cs, Ds, Fs = kg_find_coeffs(A_array, B_array)
-    #print(f"all C's: {Cs}\nall D's: {Ds}\nall F's: {Fs}")
+    print(f"all C's: {Cs}\nall D's: {Ds}\nall F's: {Fs}")
     for n in range(0, N_MAX):
         #C_n, D_n = kg_find_coeff(n+1, DELTA, A, B)
         coeff_matrix[n, n] = Cs[n]
@@ -80,6 +80,7 @@ def kg_find_epsilon_u(A_array, B_array):
     
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
     epsilons = lambdas_all/(1 + np.sqrt(1 + ZETA_S*lambdas_all/2))
+    print(f"lambdas: {lambdas_all}")
     #print(f"    all epsilon e-vals: {epsilons}\n")
     #print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
     #epsilon = epsilons[LEVEL]
