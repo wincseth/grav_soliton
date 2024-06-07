@@ -16,7 +16,7 @@ zetta_sn = [0.01, .1, .2, .5, 1]
 colors = ["red", 'orange', 'yellow', 'green', 'blue']
 delta = zetta_max/(n_int+1)
 zetta_n = np.arange(0, zetta_max, delta)
-Rounds = 50
+Rounds = 10
 G = 6.7*10**(-39) #normalized gravity
 M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2*10**10
@@ -48,9 +48,11 @@ def finite_differences(A, B):
     N = np.argmin(epsilon)
     u_bar = eigenvectors[:, N]
     u_bar = np.sqrt(goo/grr)*u_bar
-    norm = sum(np.sqrt(goo)*u_bar**2*delta)
+    norm = sum(np.sqrt(grr)*u_bar**2*delta)
     u_bar /= np.sqrt(norm)
     u_bar[0] = 0
+    print(sum(u_bar))
+    
     return [min(epsilon), u_bar]
 
 def radial_function(u, A, zetta):
