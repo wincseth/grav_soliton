@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 #Global Variables-------------------------------------------------------
 
 #User input
-n = 375 #Interval Steps
-ZETA_MAX = 190
-ZETA_Sn = np.linspace(0.1, 1, 10)
-loops = 30
+n = 600 #Interval Steps
+ZETA_MAX = 180
+ZETA_Sn = [0.01, 0.1, 0.2, 0.5, 1]
+loops = 20
 #-----------------------------------------------------------------------
 #Global variables afterwards
 DEL = (ZETA_MAX)/(n + 1) #Spacing of intervals
@@ -62,12 +62,15 @@ def matrix_const(A, B, ZETA, ZETA_S):
     """
     
     goo, grr = metric(A, B)
-    H_ratio = ((ZETA_S**2)/(4*(ZETA**2)*((ZETA**2)-(ZETA_S**2))))
-    H_ratio[0] = 0
-    C = -(goo/grr)*H_ratio + (4/ZETA_S)*(np.exp(A)*np.sinh(A)) + (2/(DEL**2))*(goo/grr)
+    C = np.zeros_like(ZETA)
     D = np.zeros_like(ZETA)
     E = np.zeros_like(ZETA)
     for i in range(N_max):
+        if ZETA[i] == 0:
+            H_ratio = 0
+        else:
+            H_ratio = ((ZETA_S**2)/(4*(ZETA[i]**2)*((ZETA[i]**2)-(ZETA_S**2))))
+        C[i] = -(goo[i]/grr[i])*H_ratio + (4/ZETA_S)*(np.exp(A[i])*np.sinh(A[i])) + (2/(DEL**2))*(goo[i]/grr[i])
         if i > 0:
             D[i] = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i-1]/grr[i-1])*(1/DEL**2)
         if i < N_max-1:
@@ -113,12 +116,14 @@ def finite_differences(A, B, ZETA_S):
     C, D, E = matrix_const(A, B, ZETA, ZETA_S)
     matrix = matrix_build(C, D, E)
     e_vals, e_vecs = np.linalg.eig(matrix)
-    N = np.argmin(abs(e_vals))
+    epsilons = e_vals/(1+np.sqrt(1+ZETA_S*e_vals/2))
+    N = np.argmin(epsilons)
     U_bar = e_vecs[:, N]
-    norm = sum(np.sqrt(goo)*DEL*U_bar**2)
-    U_bar = U_bar / norm  # Correct normalization
+    epsilon = epsilons[N]
+    norm = sum(np.sqrt(goo)*DEL*(U_bar**2))
+    U_bar = U_bar / norm
+    print(np.trapz(U_bar, ZETA))
     U_bar[0] = 0
-    epsilon = e_vals[N]/(1+np.sqrt(1+ZETA_S*e_vals[N]/2))
     
     return U_bar, epsilon
     
@@ -177,7 +182,10 @@ def values_for_RK(A, B, ZETA, R, dR, n, epsilon, ZETA_S):
         dA: np scalar
         dB: np scalar
     """
-    
+    if n == 0:
+        dA = 0
+        dB = 0
+        return dA, dB
     dA = DEL * ((1 / (2 * ZETA[n]) * (np.exp(2 * B) - 1)) - (ZETA_S * ZETA[n] / 4) * np.exp(2 * B) * (R[n]**2) + ((ZETA[n] * ZETA_S**2) / 8) * dR[n]**2 + (ZETA_S * ZETA[n] / 4) * ((1 + .5 * ZETA_S * epsilon)**2) * (np.exp(2 * (B - A))) * R[n]**2)
     dB = DEL * (-(1 / (2 * ZETA[n]) * (np.exp(2 * B) - 1)) + (ZETA_S * ZETA[n] / 4) * np.exp(2 * B) * (R[n]**2) + ((ZETA[n] * ZETA_S**2) / 8) * dR[n]**2 + (ZETA_S * ZETA[n] / 4) * ((1 + .5 * ZETA_S * epsilon)**2) * (np.exp(2 * (B - A))) * R[n]**2)
     return dA, dB
@@ -200,41 +208,60 @@ def Runge_Kutta(U_bar, epsilon, A, B, ZETA_S):
     goo, grr = metric(A, B)
     R_array = radial_func(U_bar, goo, grr, ZETA)
     dR_array = der_of_R(R_array)
-    A_new = np.zeros_like(U_bar)
-    B_new = np.zeros_like(U_bar)
-    for i in range(len(A)):
+    dmu_array = np.sqrt(grr/goo)*(np.sqrt(goo/grr)*U_bar)**2
+    mu_tilde_end = 0
+    for n in range(N_max-1):
+        mu_tilde_end += DEL*(dmu_array[n]+dmu_array[n+1])/2
+    A[N_max-1] = np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2
+    B[N_max-1] = -A[N_max-1]
+    for i in range(N_max-1, 0, -1):
         if i == 0:
-            A_new[i] = 0
-            B_new[i] = 0
+            A[i] = 0
+            B[i] = 0
             continue
-        if i == 1:
-            dA_val = 0
-            dB_val = 0
         else:
-            dA_val, dB_val = values_for_RK(A_new[i - 1], B_new[i - 1], ZETA, R_array, dR_array, i - 1, epsilon, ZETA_S)
-        A_temp = A_new[i - 1] + DEL * dA_val
-        B_temp = B_new[i - 1] + DEL * dB_val
-        dA_val2, dB_val2 = values_for_RK(A_temp, B_temp, ZETA, R_array, dR_array, i, epsilon, ZETA_S)
-        A_new[i] = A_new[i - 1] + (DEL / 2) * (dA_val + dA_val2)
-        B_new[i] = B_new[i - 1] + (DEL / 2) * (dB_val + dB_val2)
-    return A_new, B_new
+            dA_val, dB_val = values_for_RK(A[i], B[i], ZETA, R_array, dR_array, i, epsilon, ZETA_S)
+        A_temp = A[i] - DEL * dA_val
+        B_temp = B[i] - DEL * dB_val
+        dA_val2, dB_val2 = values_for_RK(A_temp, B_temp, ZETA, R_array, dR_array, i-1, epsilon, ZETA_S)
+        A[i-1] = A[i] - (DEL / 2) * (dA_val + dA_val2)
+        B[i-1] = B[i] - (DEL / 2) * (dB_val + dB_val2)
+    A[0] = 0
+    B[0] = 0
+    return A, B
 
 #Main Function------------------------------------------------------------
 
 def main():
-    plt.figure(figsize=(9, 9))
+    epsilons = np.zeros_like(ZETA_Sn)
+    U_Bars_matrix = np.zeros((len(ZETA), len(ZETA_Sn)))
     for j in range(len(ZETA_Sn)):
         ZETA_S = ZETA_Sn[j]
         A_array = np.zeros_like(ZETA)
         B_array = np.zeros_like(ZETA)
+        for k in range(len(A_array)):
+            if ZETA[k] > ZETA_S:
+                A_array[k] = np.log(1-(ZETA_S/ZETA[k]))/2
+                B_array[k] = -A_array[k]
         for i in range(loops):
             U_bar, epsilon = finite_differences(A_array, B_array, ZETA_S)
             A_array, B_array = Runge_Kutta(U_bar, epsilon, A_array, B_array, ZETA_S)
             print(ZETA_S)
             print(epsilon)
-        plt.plot(ZETA, abs(U_bar), label=f'zeta_s value of {ZETA_Sn[j]}')
-    ax = plt.gca()
-    ax.set_xlim([0, 25])
-    plt.legend()
+        U_Bars_matrix[:, j] = U_bar
+        epsilons[j] = epsilon
+        #ax = plt.gca()
+        #ax.set_xlim([0, 100])
+        plt.figure(figsize=(9,9))
+        plt.plot(ZETA, A_array, label="A")
+        plt.plot(ZETA, B_array, label="B")
+        plt.legend()
+        plt.savefig(f'A_and_B_of_{ZETA_Sn[j]}.png')
+    plt.figure(figsize=(9, 9))
+    for i in range(len(ZETA_Sn)):
+        plt.plot(ZETA, abs(U_Bars_matrix[:, i]), label = f'ZETA_S = {ZETA_Sn[i]}')
+    plt.title(f'zeta_s value of {ZETA_Sn[j]}')
+    plt.savefig(f'U_bars_of_{ZETA_Sn[j]}.png')
+    print(epsilons)
     
 _=main()
