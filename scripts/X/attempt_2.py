@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 #User input
 n = 600 #Interval Steps
 ZETA_MAX = 180
-ZETA_Sn = [0.01, 0.1, 0.2, 0.5, 1]
+ZETA_Sn = [0.1]
 loops = 20
 #-----------------------------------------------------------------------
 #Global variables afterwards
@@ -46,6 +46,30 @@ def metric(A, B):
     grr = np.exp(2*B)
     return(goo, grr)
 
+def H_ratio_func(ZETA, goo, grr):
+    
+    """
+    Creates ratio of H_tilde and its second derivative using finite differences
+    
+    Parameters:
+        ZETA: 1D np array
+        goo: 1D np array 
+        grr: 1D np array
+    Outputs:
+        H_return: 1D np array
+    """
+    
+    H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr))
+    H_tilde_2nd = np.zeros_like(H_tilde)
+    for i in range(len(H_tilde_2nd)):
+        if i == 0 or i == len(H_tilde_2nd)-1:
+            H_tilde_2nd[i] = 0
+        else:
+            H_tilde_2nd[i] = (DEL**2)*((ZETA[i+1]*np.sqrt(np.sqrt(goo[i+1]/grr[i+1])))-2*(ZETA[i]*np.sqrt(np.sqrt(goo[i]/grr[i])))+(ZETA[i-1]*np.sqrt(np.sqrt(goo[i-1]/grr[i-1]))))
+    H_return = H_tilde_2nd/H_tilde
+    H_return[0] = 0
+    return H_return
+
 def matrix_const(A, B, ZETA, ZETA_S):
     
     """
@@ -65,12 +89,9 @@ def matrix_const(A, B, ZETA, ZETA_S):
     C = np.zeros_like(ZETA)
     D = np.zeros_like(ZETA)
     E = np.zeros_like(ZETA)
+    H_ratio = H_ratio_func(ZETA, goo, grr)
     for i in range(N_max):
-        if ZETA[i] == 0:
-            H_ratio = 0
-        else:
-            H_ratio = ((ZETA_S**2)/(4*(ZETA[i]**2)*((ZETA[i]**2)-(ZETA_S**2))))
-        C[i] = -(goo[i]/grr[i])*H_ratio + (4/ZETA_S)*(np.exp(A[i])*np.sinh(A[i])) + (2/(DEL**2))*(goo[i]/grr[i])
+        C[i] = (goo[i]/grr[i])*H_ratio[i] + (4/ZETA_S)*(np.exp(A[i])*np.sinh(A[i])) + (2/(DEL**2))*(goo[i]/grr[i])
         if i > 0:
             D[i] = -np.sqrt(goo[i]/grr[i])*np.sqrt(goo[i-1]/grr[i-1])*(1/DEL**2)
         if i < N_max-1:
@@ -143,7 +164,7 @@ def radial_func(U, goo, grr, ZETA):
     
     R = np.zeros_like(U)
     use = np.where(ZETA != 0)
-    R[use] = np.sqrt(np.sqrt(goo[use] / grr[use])) * U[use] / (ZETA[use])
+    R[use] = np.sqrt(np.sqrt(goo[use])/grr[use]) * U[use] / (ZETA[use])
     return R
     
 def der_of_R(R):
@@ -215,19 +236,12 @@ def Runge_Kutta(U_bar, epsilon, A, B, ZETA_S):
     A[N_max-1] = np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2
     B[N_max-1] = -A[N_max-1]
     for i in range(N_max-1, 0, -1):
-        if i == 0:
-            A[i] = 0
-            B[i] = 0
-            continue
-        else:
-            dA_val, dB_val = values_for_RK(A[i], B[i], ZETA, R_array, dR_array, i, epsilon, ZETA_S)
+        dA_val, dB_val = values_for_RK(A[i], B[i], ZETA, R_array, dR_array, i, epsilon, ZETA_S)
         A_temp = A[i] - DEL * dA_val
         B_temp = B[i] - DEL * dB_val
         dA_val2, dB_val2 = values_for_RK(A_temp, B_temp, ZETA, R_array, dR_array, i-1, epsilon, ZETA_S)
         A[i-1] = A[i] - (DEL / 2) * (dA_val + dA_val2)
         B[i-1] = B[i] - (DEL / 2) * (dB_val + dB_val2)
-    A[0] = 0
-    B[0] = 0
     return A, B
 
 #Main Function------------------------------------------------------------
@@ -257,6 +271,12 @@ def main():
         plt.plot(ZETA, B_array, label="B")
         plt.legend()
         plt.savefig(f'A_and_B_of_{ZETA_Sn[j]}.png')
+    plt.figure(figsize=(9,9))
+    goo, grr = metric(A_array, B_array)
+    H_vec = H_ratio_func(ZETA, goo, grr)
+    plt.plot(ZETA, H_vec)
+    plt.xlim((0, 20))
+    plt.ylim((-.0002, .0002))
     plt.figure(figsize=(9, 9))
     for i in range(len(ZETA_Sn)):
         plt.plot(ZETA, abs(U_Bars_matrix[:, i]), label = f'ZETA_S = {ZETA_Sn[i]}')
