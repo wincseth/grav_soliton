@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 # GLOBAL PARAMETERS:
 NUM_ZETA_INTERVALS = 600 # number of zeta intervals, length of the n arrays - 1
 LEVEL = 1 # which energy (e-val) and u bar set (e-vec) to use
-ZETA_S = 0.5
+ZETA_S = 0.1
 ZETA_MAX = 150
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 1 # how many times to run through the equations
+ITERATIONS = 20 # how many times to run through the equations
 
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
@@ -69,7 +69,7 @@ def kg_find_epsilon_u(A_array, B_array):
 
     coeff_matrix = np.zeros((N_MAX, N_MAX))
     Cs, Ds, Fs = kg_find_coeffs(A_array, B_array)
-    print(f"all C's: {Cs}\nall D's: {Ds}\nall F's: {Fs}")
+    #print(f"all C's: {Cs}\nall D's: {Ds}\nall F's: {Fs}")
     for n in range(0, N_MAX):
         #C_n, D_n = kg_find_coeff(n+1, DELTA, A, B)
         coeff_matrix[n, n] = Cs[n]
@@ -80,7 +80,7 @@ def kg_find_epsilon_u(A_array, B_array):
     
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
     epsilons = lambdas_all/(1 + np.sqrt(1 + ZETA_S*lambdas_all/2))
-    print(f"lambdas: {lambdas_all}")
+    #print(f"lambdas: {lambdas_all}")
     #print(f"    all epsilon e-vals: {epsilons}\n")
     #print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
     #epsilon = epsilons[LEVEL]
@@ -200,10 +200,21 @@ def main():
     #u_bars_final = u_bar_plot_vals[ITERATIONS-1, :]
     #u_plot_final = u_bars_final*np.sqrt(g_00_array/(g_rr_array*A_BOHR))
     #u_plot_final = u_plot_final*np.sqrt(A_BOHR*g_rr_array/np.sqrt(g_00_array))
+    
+    plt.figure(1)
     plt.plot(ZETA_VALS, abs(u_bar_array))
+    plt.title("u bars vs zeta")
     plt.xlim(0, 20)
     #plt.plot(range(ITERATIONS), epsilon_plot_vals)
     plt.grid(True)
+
+    plt.figure(2)
+    plt.plot(ZETA_VALS, A_array, label='A', color='blue')
+    plt.plot(ZETA_VALS, B_array, label='B', color='red')
+    plt.xlim(0, 20)
+    plt.title('A and B values vs zeta')
+    plt.grid(True)
+    plt.legend()
     plt.show()
 
 _ = main()
