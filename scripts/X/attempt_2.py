@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 #Global Variables-------------------------------------------------------
 
 #User input
-n = 600 #Interval Steps
-ZETA_MAX = 180
-ZETA_Sn = [0.1]
-loops = 20
+n = 2200 #Interval Steps
+ZETA_MAX = 125
+ZETA_Sn = [0.01, .1, 0.5, 1]
+loops = 8
 #-----------------------------------------------------------------------
 #Global variables afterwards
 DEL = (ZETA_MAX)/(n + 1) #Spacing of intervals
@@ -78,7 +78,8 @@ def matrix_const(A, B, ZETA, ZETA_S):
     Parameters:
         A: 1D np array
         B: 1D np array
-        Zeta: 1D np array
+        ZETA: 1D np array
+        ZETA_S: np scalar
     Outputs:
         C: 1D np array
         D: 1D np array
@@ -143,7 +144,6 @@ def finite_differences(A, B, ZETA_S):
     epsilon = epsilons[N]
     norm = sum(np.sqrt(goo)*DEL*(U_bar**2))
     U_bar = U_bar / norm
-    print(np.trapz(U_bar, ZETA))
     U_bar[0] = 0
     
     return U_bar, epsilon
@@ -273,14 +273,14 @@ def main():
         plt.savefig(f'A_and_B_of_{ZETA_Sn[j]}.png')
     plt.figure(figsize=(9,9))
     goo, grr = metric(A_array, B_array)
-    H_vec = H_ratio_func(ZETA, goo, grr)
-    plt.plot(ZETA, H_vec)
-    plt.xlim((0, 20))
-    plt.ylim((-.0002, .0002))
+    H_vec = radial_func(U_bar, goo, grr, ZETA)
+    plt.plot(ZETA, H_vec**2)
+    plt.show()
     plt.figure(figsize=(9, 9))
     for i in range(len(ZETA_Sn)):
         plt.plot(ZETA, abs(U_Bars_matrix[:, i]), label = f'ZETA_S = {ZETA_Sn[i]}')
     plt.title(f'zeta_s value of {ZETA_Sn[j]}')
+    plt.legend()
     plt.savefig(f'U_bars_of_{ZETA_Sn[j]}.png')
     print(epsilons)
     
