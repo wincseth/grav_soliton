@@ -2,15 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 1000 # number of zeta intervals, length of the n arrays - 1
+NUM_ZETA_INTERVALS = 1400 # number of zeta intervals, length of the n arrays - 1
 LEVEL = 1 # which energy (e-val) and u bar set (e-vec) to use
-ZETA_S = 0.5
-ZETA_S_VALS = [0.01, 0.1, 0.2, 0.5]
-ZETA_MAX = 100
+#ZETA_S = 0.5
+ZETA_S_VALS = [0.01]
+ZETA_MAX = 120
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 30 # how many times to run through the equations
+ITERATIONS = 20 # how many times to run through the equations
 
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
@@ -50,20 +50,21 @@ def kg_find_coeffs(A_array, B_array, h_tilde, zeta_s):
         # fill C's:
         if zeta_n == zeta_s:
             print("\n Current zeta is the same as zeta_s (Bad!)\n")
-        if zeta_n != 0:
-            #h_tilde_frac = -(ZETA_S**2)/(4*(zeta_n**2)*(zeta_n**2 - ZETA_S**2))
-            h_tilde_frac = (ht[n+1]-2*ht[n]+ht[n-1])/(ht[n]*DELTA**2)
-        else:
-            h_tilde_frac = 1
-        c_consts[n] = g_frac*h_tilde_frac + (4/zeta_s)*np.exp(A_array[n])*np.sinh(A_array[n]) + 2*g_frac/(DELTA**2)
-        # fill D's:
-        if n != N_MAX-1:
+        if n != 0 and n != N_MAX-1:
             g_frac_next = g_00_array[n+1]/g_rr_array[n+1]
-            d_consts[n] = -np.sqrt(g_frac*g_frac_next)/(DELTA**2)
-        # fill F's:
-        if n != 0:
             g_frac_prev = g_00_array[n-1]/g_rr_array[n-1]
-            f_consts[n] = -np.sqrt(g_frac*g_frac_prev)/(DELTA**2)
+            # fill D's:
+            if n != N_MAX-1:
+                d_consts[n] = -np.sqrt(g_frac*g_frac_next)/(DELTA**2)
+            # fill F's:
+            if n != 0:
+                f_consts[n] = -np.sqrt(g_frac*g_frac_prev)/(DELTA**2)
+            #h_tilde_frac = -(ZETA_S**2)/(4*(zeta_n**2)*(zeta_n**2 - ZETA_S**2))
+            #h_tilde_frac = (ht[n+1]-2*ht[n]+ht[n-1])/(ht[n]*DELTA**2)
+            h_tilde_frac = (ZETA_VALS[n+1]*np.sqrt(np.sqrt(g_frac_next)) - 2*ZETA_VALS[n]*np.sqrt(np.sqrt(g_frac)) + ZETA_VALS[n-1]*np.sqrt(np.sqrt(g_frac_prev)))/(DELTA**2)
+        else:
+            h_tilde_frac = 0
+        c_consts[n] = g_frac*h_tilde_frac + (4/zeta_s)*np.exp(A_array[n])*np.sinh(A_array[n]) + 2*g_frac/(DELTA**2)
 
     return c_consts, d_consts, f_consts
 
@@ -90,14 +91,15 @@ def kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s):
             coeff_matrix[n, n-1] = Fs[n]
     
     lambdas_all, u_bars_all = np.linalg.eig(coeff_matrix)
-    epsilons = lambdas_all/(1 + np.sqrt(1 + zeta_s*lambdas_all/2))
-    #print(f"    all epsilon e-vals: {epsilons}\n")
-    #print(f"    index for smallest epsilon: {np.argmin(epsilons)}")
-    #epsilon = epsilons[LEVEL]
-    #u_bars = u_bars_all[:, LEVEL]
-    epsilon = np.min(epsilons)
-    u_bars = u_bars_all[:, np.argmin(epsilons)]
+    lambda_min = np.min(lambdas_all)
+    print(f"minimum lambda: {lambda_min}")
+    #epsilons = lambdas_all/(1 + np.sqrt(1 + zeta_s*lambdas_all/2))
+    #epsilon = np.min(epsilons)
+    #u_bars = u_bars_all[:, np.argmin(epsilons)]
     
+    epsilon = lambda_min/(1 + np.sqrt(1 + zeta_s*lambda_min/2))
+    u_bars = u_bars_all[:, np.argmin(lambdas_all)]
+
     u_tilde = np.sqrt(g_00_array/g_rr_array)*u_bars
     u_tilde[0] = 0
     u_tilde[N_MAX-1] = 0
