@@ -2,17 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 1200 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [1]
-ZETA_MAX = 120
+NUM_ZETA_INTERVALS = 800 # number of zeta intervals, length of the n arrays - 1
+ZETA_S_VALS = [0.01, 1]
+ZETA_MAX = 40
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 30 # how many times to run through the equations
+MAX_ITERATIONS = 40 # how many times to run through the equations
+TOLERANCE = 1.0e-6 #level of accuracy for epsilon convergence
 
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
 A_BOHR = 1/(G_GRAV*M_MASS**3)
+
+PLOT_PARAMS = {
+    'u_bar': False,
+    'h_tilde': False,
+    'AB': True
+}
 
 # Klein Gordon equation solver ----------------------------------------------------
 def kg_find_coeffs(A_array, B_array, h_tilde, zeta_s):
@@ -194,40 +201,83 @@ def gr_RK2(epsilon, Rt_array, dRt_array, u_tilde, A_array, B_array, zeta_s):
 
 # Main function that brings it together
 def main():
-    
+
+    # key values will be replaced with plot arrays
+    data = {
+        'u_bar': True,
+        'h_tilde': True,
+        'A_values': True,
+        'B_values': True
+    }
+    fig_idx = 1
     for j in ZETA_S_VALS:
         zeta_s = j
         A_array, B_array, h_tilde = gr_initialize_metric(zeta_s)
-
+        epsilon = -1 # initial guess
+    
         #iterate through equations until convergence
-        for i in range(ITERATIONS):
+        for i in range(MAX_ITERATIONS):
             print(f"\n\n----- In iteration number {i+1}, zeta_s={zeta_s}:\n")
+            
+            prev_epsilon = epsilon # used to check for epsilon convergence
             
             # Loop through Klein Gordon and Metric equations
             epsilon, u_bar_array, hf_out = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
             R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
             A_array, B_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, u_tilde, A_array, B_array, zeta_s)
-
-            print(f"Calculated (lowest) epsilon value: {epsilon}\n")
-            #print(f"    A vals: {A_array}\nB vals: {B_array}\n")
-
             # recalculate metric elements and h_tilde
             h_tilde[0] = 0
             g_00_array = np.exp(2*A_array)
             g_rr_array = np.exp(2*B_array)
             h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
 
+            print(f"Calculated (lowest) epsilon value: {epsilon}\n")
+            #print(f"    A vals: {A_array}\nB vals: {B_array}\n")
+
+            # assign values to dictionary
+            data['u_bar'] = abs(u_bar_array)
+            data['h_tilde'] = h_tilde
+            data['A_values'] = A_array
+            data['B_values'] = B_array
+
+            # check for epsilon convergence within tolerance
+            if abs(epsilon - prev_epsilon) <= TOLERANCE:
+                iter_to_tolerance = i+1
+                break
+        print(f"In {iter_to_tolerance} iterations the calculated epsilon is {epsilon}, accurate to {TOLERANCE}")
+            
         g_00_array = np.exp(2*A_array)
         g_rr_array = np.exp(2*B_array)
+
+        # plot using the global dictionary
+        for key, plot_val in PLOT_PARAMS.items():
+            if plot_val and key=='AB':
+                plt.figure(fig_idx)
+                plt.plot(ZETA_VALS, data['A_values'], label="A values", alpha=0.5, marker='.')
+                plt.plot(ZETA_VALS, data['B_values'], label="B values", alpha=0.5, marker='.')
+                plt.ylabel("A and B")
+
+                fig_idx+=1
+            elif plot_val:
+                plt.figure(fig_idx)
+                plt.plot(ZETA_VALS, data[key], label=key, alpha=0.5, marker='.')
+                plt.ylabel(key)
+                fig_idx+=1
+            plt.xlim(0, 20)
+            plt.xlabel("$\zeta$")
+            plt.legend()
+            plt.grid(True)
+        plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}\nIter: {iter_to_tolerance}, Tol: {TOLERANCE}\nZ_max={ZETA_MAX}, Z_int={NUM_ZETA_INTERVALS}")
+            
         #plt.figure(1)
-        plt.plot(ZETA_VALS, abs(u_bar_array), alpha=0.75, label=f"$\zeta_s={zeta_s}$, $\epsilon={epsilon}$")
+        #plt.plot(ZETA_VALS, abs(u_bar_array), alpha=0.75, label=f"$\zeta_s={zeta_s}$, $\epsilon={epsilon}$")
         #plt.plot(ZETA_VALS, hf_out, alpha=0.75, label="h tilde fraction", marker='.')
         
-        plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}")
+        #plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}")
 
-    plt.xlim(0, 20)
-    plt.legend()
-    plt.grid(True)
+    #plt.xlim(0, 20)
+    #plt.legend()
+    #plt.grid(True)
     plt.show()
 
 _ = main()
