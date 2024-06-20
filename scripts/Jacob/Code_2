@@ -125,8 +125,8 @@ def temp_slope(zeta, R, dR, g00, grr, ZETA_S, e):
         dA = 0#keeps our temp values from blowing up to infinity or being undefined
         dB = 0
     else:
-        dA = (grr-1)/(2*zeta) - (ZETA_S*zeta*grr*R**2)/4 + (((ZETA_S**2)*zeta)/8)*(dR)**2 + ((ZETA_S*zeta)/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00)*(R)**2
-        dB = -(grr-1)/(2*zeta) + (ZETA_S*zeta*grr*R**2)/4 + (((ZETA_S**2)*zeta)/8)*(dR)**2 + ((ZETA_S*zeta)/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00)*(R)**2
+        dA = (grr-1)/(2*zeta) - (ZETA_S*zeta*grr*R**2)/4 + (((ZETA_S**2)*zeta)/8)*(dR) + ((ZETA_S*zeta)/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00)*(R)
+        dB = -(grr-1)/(2*zeta) + (ZETA_S*zeta*grr*R**2)/4 + (((ZETA_S**2)*zeta)/8)*(dR) + ((ZETA_S*zeta)/4)*(1+(ZETA_S*e)/2)**2 * (grr/g00)*(R)
     return dA, dB
 
 def R_K(A, B, R, dR, g00, grr, ZETA_S, e):
@@ -144,12 +144,7 @@ def R_K(A, B, R, dR, g00, grr, ZETA_S, e):
         grr_temp = np.exp(2*B_temp)
         A[i+1] = A[i] + (DELTA/2)*(A_temp - A[i] + temp_slope(ZETA[i + 1], R[i + 1], dR[i + 1], g00_temp, grr_temp, ZETA_S, e)[0])
         B[i+1] = B[i] + (DELTA/2)*(B_temp - B[i] + temp_slope(ZETA[i + 1], R[i + 1], dR[i + 1], g00_temp, grr_temp, ZETA_S, e)[1])
-    return [A, B]
-
-def U_final(g00, grr,u):
-    
-    U_final = (u/np.sqrt(a))*np.sqrt(g00/grr)
-    return U_final
+    return A, B
 
 #Main Function-------------------------------------------------------
 def main():
@@ -168,7 +163,6 @@ def main():
             R = R_tilde(g00, grr, u)
             dR = dR_tilde(R, g00, grr)
             A_array, B_array = R_K(A, B, R, dR, g00, grr, ZETA_S, e)
-            U = U_final(g00, grr,u)
             U_abs = abs(U)
         array = np.array(values)
         min_e = np.min(array)
