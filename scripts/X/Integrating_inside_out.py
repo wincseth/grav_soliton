@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun  6 10:24:17 2024
+Created on Tue Jun 18 09:57:19 2024
 
 @author: xaviblast123
 """
-
-#Imported libraries------------------------------------------------------
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,10 +12,10 @@ import matplotlib.pyplot as plt
 # Global Variables-------------------------------------------------------
 
 # User input
-n = 500  # Interval Steps
-ZETA_MAX = 50
-ZETA_Sn = [1]
-loops = 33
+n = 750  # Interval Steps
+ZETA_MAX = 120
+ZETA_S = 1
+loops = 50
 # -----------------------------------------------------------------------
 # Global variables afterwards
 DEL = (ZETA_MAX)/(n + 1)  # Spacing of intervals
@@ -31,8 +29,7 @@ R_S = 2*G*M  # schwarzschild radius
 
 # Functions--------------------------------------------------------------
 
-
-def metric(goo, grr):
+def metric(A, B):
     """
     Creates the metric arrays using A and B
 
@@ -44,18 +41,17 @@ def metric(goo, grr):
         grr: 1D np array
     """
 
-    A = np.log(goo)/2
-    B = np.log(grr)/2
-    return (A, B)
+    goo = np.exp(2*A)
+    grr = np.exp(2*B)
+    return (goo, grr)
 
-
-def matrix_const(goo, grr, ZETA, ZETA_S):
+def matrix_const(A, B, ZETA, ZETA_S):
     """
     Creates arrays for matrix values
 
     Parameters:
-        goo: 1D np array
-        grr: 1D np array
+        A: 1D np array
+        B: 1D np array
         ZETA: 1D np array
         ZETA_S: np scalar
     Outputs:
@@ -63,7 +59,8 @@ def matrix_const(goo, grr, ZETA, ZETA_S):
         D: 1D np array
         E: 1D np array
     """
-    A, B = metric(goo, grr)
+
+    goo, grr = metric(A, B)
     C = np.zeros_like(ZETA) #Initialize zero vectors for our constants
     D = np.zeros_like(ZETA)
     E = np.zeros_like(ZETA)
@@ -101,22 +98,20 @@ def matrix_build(C, D, E):
     return matrix
 
 
-def finite_differences(goo, grr, ZETA_S):
+def finite_differences(A, B, ZETA_S):
     """
     Uses a finite difference approach to calculate our U_bar array and our epsilon value
 
     Parameters:
         A: 1D np array
         B: 1D np array
-        goo: 1D np array
-        grr: 1D np array
     Outputs:
         U_bar: 1D np array
         epsilon: np scalar
     """
-    
-    A, B = metric(goo, grr)
-    C, D, E = matrix_const(goo, grr, ZETA, ZETA_S)
+
+    goo, grr = metric(A, B)
+    C, D, E = matrix_const(A, B, ZETA, ZETA_S)
     matrix = matrix_build(C, D, E) #Builds matrix that is dependent on the A and B vectors we got before
     e_vals, e_vecs = np.linalg.eig(matrix) #Grabs eigenvalues and eigenvectors
     epsilons = e_vals/(1+np.sqrt(1+ZETA_S*e_vals/2)) #Calculates the epsilon energies for all the eigenvalues
@@ -130,11 +125,9 @@ def finite_differences(goo, grr, ZETA_S):
     norm = np.sum(grr*u_tilde**2/np.sqrt(goo)) #Normalizes U_tilde
     u_tilde /= np.sqrt(norm*DEL)
 
-    U_bar = np.sqrt(grr/goo)*u_tilde #Converts back to 
-    print(epsilon)
+    U_bar = np.sqrt(grr/goo)*u_tilde #Converts back to U_bar
 
     return U_bar, epsilon
-
 
 def radial_func(U, goo, grr, ZETA):
     """
@@ -202,7 +195,7 @@ def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S):
     dB = -(np.exp(2*B) - 1)/(2*ZETA) + ((ZETA_S*ZETA)/4)*np.exp(2*B)*(R**2) + common #Calculates dB
     return dA, dB
 
-def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S):
+def Runge_Kutta(U_bar, epsilon, A, B, ZETA_S):
 
     """
     Performs the Runge Kutta of the second order technique on A and B
@@ -210,125 +203,46 @@ def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S):
     Parameters:
         U_bar: 1D np array
         epsilon: np scalar
-        goo: 1D np array
-        grr: 1D np array
-    Outputs:
         A: 1D np array
         B: 1D np array
+    Outputs:
+        A_new: 1D np array
+        B_new: 1D np array
     """
 
-    A, B = metric(goo, grr)
+    goo, grr = metric(A, B) #Initializes metric
     H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr)) #Calculates H_tilde for dR
     R_array=radial_func(U_bar, goo, grr, ZETA) #Calculates Radial function
     dR_array=der_of_R(U_bar, H_tilde, goo, grr) #Calculates derivative of radial function
-    dmu_array=np.sqrt(grr/goo)*(np.sqrt(goo/grr)*U_bar)**2 #Calculates derivative of mass function mu
-    mu_tilde_end=0
-    for n in range(N_max-1):
-        mu_tilde_end += DEL*(dmu_array[n]+dmu_array[n+1])/2 #Sums up the whole mass
     
-    A[N_max-1]=np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2 #Sets end of A vector to include all the mass, our initial condition
-    B[N_max-1]=-np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2 #Sets end of B vector to include all the mass, our initial condition
-    for i in range(N_max-1, 0, -1):
+    
+    for i in range(0, N_max-1, 1):
         dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S) #Calculates dA and dB values using our old A and B Vectors
-        A_temp=A[i] - DEL * dA_val #Finds temporary values
-        B_temp=B[i] - DEL * dB_val
-        dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i-1], dR_array[i-1], i-1, epsilon, ZETA_S) #Calculates dA and dB using our temporary values
-        A[i-1]=A[i] - (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
-        B[i-1]=B[i] - (DEL / 2) * (dB_val + dB_val2)
+        A_temp=A[i] + DEL * dA_val #Finds temporary values
+        B_temp=B[i] + DEL * dB_val
+        dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i+1], dR_array[i+1], i+1, epsilon, ZETA_S) #Calculates dA and dB using our temporary values
+        A[i+1]=A[i] + (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
+        B[i+1]=B[i] + (DEL / 2) * (dB_val + dB_val2)
     return A, B
 
-def gr_initialize_metric(ZETA_S):
-    
-    '''
-    Initializes our metric equations
-    
-    Parameters:
-        ZETA_S: np scalar
-    Outputs:
-        a_array: 1D np vector
-        b_array: 1D np vector
-        h_tilde: 1D np vector
-    '''
-    g_00_array=np.ones(N_max)
-    g_rr_array=np.ones(N_max)
-    greater_idx=ZETA > ZETA_S #Finds indeces where ZETA is greater than ZETA_S
-    g_00_array[greater_idx]=1 - ZETA_S/ZETA[greater_idx] #Calculates g00's initial condition
-    g_rr_array[greater_idx]=1/g_00_array[greater_idx] #Same with grr
-
-    h_tilde=ZETA*np.sqrt(np.sqrt(g_00_array/g_rr_array)) #Calculates h_tilde
-
-    return g_00_array, g_rr_array, h_tilde
-    
-
-# Main Function------------------------------------------------------------
+#Main Function---------------------------------------------------------
 
 def main():
+    a_array = np.zeros_like(ZETA)
+    b_array = np.zeros_like(ZETA)
+    a_array[0] = 0.28117229
+    b_array[0] = -0.5146
+    for i in range(loops):
+        U_bar, epsilon = finite_differences(a_array, b_array, ZETA_S)
+        Runge_Kutta(U_bar, epsilon, a_array, b_array, ZETA_S)
+        print(epsilon)
     
-    epsilons=np.zeros_like(ZETA_Sn) #Initializes 0 vector to store final epsilon values
-    U_Bars_matrix=np.zeros((len(ZETA), len(ZETA_Sn))) #Stores U_bar values for plotting purposes
-    a_initial = np.zeros_like(ZETA_Sn) #Initializes 0 vectors for A and B
-    b_initial = np.zeros_like(ZETA_Sn)
-    figure1 = plt.figure() #Initializes figure
-    ax1 = figure1.add_subplot(111) #Creates big subplot to have common index for both subplots
-    ax1_sub1 = figure1.add_subplot(211) #Initializes subplots for A and B
-    ax1_sub2 = figure1.add_subplot(212)
-    
-    for j in range(len(ZETA_Sn)): #Calculates A, B, and epsilon for all ZETA_S values we care about
-        ZETA_S = ZETA_Sn[j] #Sets ZETA_S value 
-        goo, grr, H_tilde = gr_initialize_metric(ZETA_S) #Initializes A, B, and H_tilde with initial conditions
-        for i in range(loops): #Goes through finite differences and Runge Kutta loop to find self satisfying solution
-            U_bar, epsilon = finite_differences(goo, grr, ZETA_S)
-            A_array, B_array = Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S)
-            goo = np.exp(2*A_array)
-            grr = np.exp(2*B_array)
-        U_Bars_matrix[:, j]=U_bar #Saves U_bar
-        epsilons[j]=epsilon #Saves epsilon
-        ax1_sub1.plot(ZETA, np.exp(2*A_array), label=f'{ZETA_S}', color = (1, j/(len(ZETA_Sn)), j/len(2*ZETA_Sn))) #Plots g_00
-        ax1_sub2.plot(ZETA, np.exp(2*B_array), label=f'{ZETA_S}', color = (1, j/(len(ZETA_Sn)), j/len(2*ZETA_Sn))) #Plots g_rr
-        a_initial[j] = A_array[0] #Saves initial value of A and B to study
-        b_initial[j] = B_array[0]
-    print(epsilons)
-    print("A initial: ", a_initial)
-    print("B initial: ", b_initial)
-    figure1.suptitle('g_00 and g_rr')
-    ax1.set_xlabel('ZETA')
-    
-    #Sets outer subplot indeces to invisible
-    ax1.spines['top'].set_color('none')
-    ax1.spines['bottom'].set_color('none')
-    ax1.spines['left'].set_color('none')
-    ax1.spines['right'].set_color('none')
-    ax1.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
-    
-    #Sets limits to X and Y for subplot, Changes layout, adds legend
-    ax1_sub1.set_xlim([0, 20])
-    ax1_sub1.set_ylim([0.5, 1.25])
-    ax1_sub2.set_xlim([0, 20])
-    ax1_sub2.set_ylim([0.5, 1.25])
-    ax1_sub1.set_ylabel('g_00')
-    ax1_sub2.set_ylabel('g_RR')
-    figure1.tight_layout()
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
-    plt.savefig('g_00_and_g_RR.png')
-
-    #Plots U_bars on top of each other to compare
-    plt.figure(figsize=(9, 9))
-    for i in range(len(ZETA_Sn)):
-        plt.plot(ZETA, abs(U_Bars_matrix[:, i]), label=f'ZETA_S = {ZETA_Sn[i]}')
-    plt.title('U_Bar for different ZETA_S')
-    plt.legend()
-    ax = plt.gca()
-    ax.set_xlim([0, 25])
-    plt.savefig('U_bars.png')
-    
-    #Plots A and B initial values to study for when we integrate inside out instead of outside in
     plt.figure(figsize=(9,9))
-    plt.plot(ZETA_Sn, a_initial, label='A')
-    plt.plot(ZETA_Sn, b_initial, label='B')
+    plt.plot(ZETA, np.exp(2*a_array), label="A")
+    plt.plot(ZETA, np.exp(b_array*2), label ='B')
     plt.legend()
-    plt.title('Initial values of A and B w.r.t ZETA_S')
-    plt.savefig('Initial_A_and_B')
-
-
-if __name__ == "__main__":
-    main()
+    
+    plt.figure(figsize=(9,9))
+    plt.plot(ZETA, abs(U_bar))
+    
+_=main()
