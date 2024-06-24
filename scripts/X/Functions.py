@@ -12,16 +12,6 @@ import numpy as np
 
 # Global Variables-------------------------------------------------------
 
-# User input
-n = 500  # Interval Steps
-ZETA_MAX = 50
-ZETA_Sn = [1]
-loops = 33
-# -----------------------------------------------------------------------
-# Global variables afterwards
-DEL = (ZETA_MAX)/(n + 1)  # Spacing of intervals
-ZETA = np.arange(0, ZETA_MAX, DEL)  # ZETA array
-N_max = len(ZETA)
 G = 6.7*10**(-39)  # normalized gravity
 M_PL = 1 / np.sqrt(G)  # mass of plank mass
 M = 8.2*10**10  # if a equals the atomic Bohr radius
@@ -36,19 +26,34 @@ def metric(goo, grr):
     Creates the metric arrays using A and B
 
     Parameters:
-        A: 1D np array
-        B; 1D np array
-    Outputs:
         goo: 1D np array
-        grr: 1D np array
+        grr; 1D np array
+    Outputs:
+        A: 1D np array
+        B: 1D np array
     """
 
     A = np.log(goo)/2
     B = np.log(grr)/2
-    return (A, B)
+    return A, B
+
+def back_metric(A, B):
+    '''
+    Goes from A and B back to the metric
+    
+    Parameters: 
+        A: 1D np array
+        B: 1D np array
+    Outputs:
+        goo: 1D np array
+        grr: 1D np array
+    '''
+    goo = np.exp(2*A)
+    grr = np.exp(2*B)
+    return goo, grr
 
 
-def matrix_const(goo, grr, ZETA, ZETA_S):
+def matrix_const(goo, grr, ZETA, ZETA_S, ZETA_MAX):
     """
     Creates arrays for matrix values
 
@@ -62,6 +67,9 @@ def matrix_const(goo, grr, ZETA, ZETA_S):
         D: 1D np array
         E: 1D np array
     """
+    N_max = len(ZETA)
+    DEL = ZETA_MAX/len(ZETA)
+    
     A, B = metric(goo, grr)
     C = np.zeros_like(ZETA) #Initialize zero vectors for our constants
     D = np.zeros_like(ZETA)
@@ -79,7 +87,7 @@ def matrix_const(goo, grr, ZETA, ZETA_S):
     return C, D, E
 
 
-def matrix_build(C, D, E):
+def matrix_build(C, D, E, ZETA):
     """
     Creates matrix for finite differences
 
@@ -90,6 +98,7 @@ def matrix_build(C, D, E):
     Outputs:
         Matrix: 2D np array
     """
+    N_max = len(ZETA)
 
     matrix = np.zeros((N_max, N_max)) #Initializes zero matrix
     for i in range(N_max): #Places constants in the correct parts of the matrix
@@ -100,7 +109,7 @@ def matrix_build(C, D, E):
     return matrix
 
 
-def finite_differences(goo, grr, ZETA_S):
+def finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX):
     """
     Uses a finite difference approach to calculate our U_bar array and our epsilon value
 
@@ -113,10 +122,12 @@ def finite_differences(goo, grr, ZETA_S):
         U_bar: 1D np array
         epsilon: np scalar
     """
+    DEL = (ZETA_MAX)/(len(ZETA))  # Spacing of intervals
+    N_max = len(ZETA)
     
     A, B = metric(goo, grr)
-    C, D, E = matrix_const(goo, grr, ZETA, ZETA_S)
-    matrix = matrix_build(C, D, E) #Builds matrix that is dependent on the A and B vectors we got before
+    C, D, E = matrix_const(goo, grr, ZETA, ZETA_S, ZETA_MAX)
+    matrix = matrix_build(C, D, E, ZETA) #Builds matrix that is dependent on the A and B vectors we got before
     e_vals, e_vecs = np.linalg.eig(matrix) #Grabs eigenvalues and eigenvectors
     epsilons = e_vals/(1+np.sqrt(1+ZETA_S*e_vals/2)) #Calculates the epsilon energies for all the eigenvalues
     N = np.argmin(epsilons) #Finds the index for the smallest epsilon, which is our 0 state energy
@@ -131,7 +142,7 @@ def finite_differences(goo, grr, ZETA_S):
 
     U_bar = np.sqrt(grr/goo)*u_tilde #Converts back to 
 
-    return U_bar, epsilon, e_vals[N]
+    return U_bar, epsilon
 
 
 def radial_func(U, goo, grr, ZETA):
@@ -153,7 +164,7 @@ def radial_func(U, goo, grr, ZETA):
     return R
 
 
-def der_of_R(U_bar, H_tilde, goo, grr):
+def der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX):
     """
     Derivative of R function
 
@@ -162,7 +173,9 @@ def der_of_R(U_bar, H_tilde, goo, grr):
     Outputs:
         dR: 1D np array
     """
-
+    N_max = len(U_bar)
+    DEL = ZETA_MAX/N_max
+    
     dR = np.zeros_like(U_bar) #Initializes another zero vector
     U_tilde = np.sqrt(goo/grr)*U_bar #Calculates U_tilde
     for i in range(len(dR)):
@@ -173,7 +186,7 @@ def der_of_R(U_bar, H_tilde, goo, grr):
     return dR
 
 
-def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S):
+def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S, ZETA):
     """
     Creates the dA and dB values for RK method
 
@@ -190,17 +203,16 @@ def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S):
         dB: np scalar
     """
 
-    ZETA = n*DEL #Calculates ZETA for a specific step
-    common = ((ZETA_S**2)*ZETA/8)*(dR**2) + (ZETA_S*ZETA/4)*((1 + ZETA_S*epsilon/2)**2)*(np.exp(2*B-2*A))*(R**2) #Common addition term between dA and dB
+    common = ((ZETA_S**2)*ZETA[n]/8)*(dR**2) + (ZETA_S*ZETA[n]/4)*((1 + ZETA_S*epsilon/2)**2)*(np.exp(2*B-2*A))*(R**2) #Common addition term between dA and dB
     if n == 0: #Sets it equal to 0 for the 0 term
         dA = 0
         dB = 0
         return dA, dB
-    dA = (np.exp(2*B) - 1)/(2*ZETA) - ((ZETA_S*ZETA)/4)*np.exp(2*B)*(R**2) + common #Calculates dA
-    dB = -(np.exp(2*B) - 1)/(2*ZETA) + ((ZETA_S*ZETA)/4)*np.exp(2*B)*(R**2) + common #Calculates dB
+    dA = (np.exp(2*B) - 1)/(2*ZETA[n]) - ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dA
+    dB = -(np.exp(2*B) - 1)/(2*ZETA[n]) + ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dB
     return dA, dB
 
-def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S):
+def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S, ZETA, ZETA_MAX):
 
     """
     Performs the Runge Kutta of the second order technique on A and B
@@ -214,11 +226,13 @@ def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S):
         A: 1D np array
         B: 1D np array
     """
+    N_max = len(ZETA)
+    DEL = ZETA_MAX/N_max
 
     A, B = metric(goo, grr)
     H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr)) #Calculates H_tilde for dR
     R_array=radial_func(U_bar, goo, grr, ZETA) #Calculates Radial function
-    dR_array=der_of_R(U_bar, H_tilde, goo, grr) #Calculates derivative of radial function
+    dR_array=der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX) #Calculates derivative of radial function
     dmu_array=np.sqrt(grr/goo)*(np.sqrt(goo/grr)*U_bar)**2 #Calculates derivative of mass function mu
     mu_tilde_end=0
     for n in range(N_max-1):
@@ -227,15 +241,46 @@ def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S):
     A[N_max-1]=np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2 #Sets end of A vector to include all the mass, our initial condition
     B[N_max-1]=-np.log(1-ZETA_S*mu_tilde_end/ZETA[N_max-1])/2 #Sets end of B vector to include all the mass, our initial condition
     for i in range(N_max-1, 0, -1):
-        dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S) #Calculates dA and dB values using our old A and B Vectors
+        dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S, ZETA) #Calculates dA and dB values using our old A and B Vectors
         A_temp=A[i] - DEL * dA_val #Finds temporary values
         B_temp=B[i] - DEL * dB_val
-        dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i-1], dR_array[i-1], i-1, epsilon, ZETA_S) #Calculates dA and dB using our temporary values
+        dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i-1], dR_array[i-1], i-1, epsilon, ZETA_S, ZETA) #Calculates dA and dB using our temporary values
         A[i-1]=A[i] - (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
         B[i-1]=B[i] - (DEL / 2) * (dB_val + dB_val2)
     return A, B
 
-def gr_initialize_metric(ZETA_S):
+def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX):
+
+    """
+    Performs the Runge Kutta of the second order technique on A and B from 0 to ZETA_MAX
+
+    Parameters:
+        U_bar: 1D np array
+        epsilon: np scalar
+        A: 1D np array
+        B: 1D np array
+        ZETA_S: np scalar
+    Outputs:
+        A: 1D np array
+        B: 1D np array
+    """
+    N_max = len(ZETA)
+    DEL = ZETA_MAX/N_max
+    goo, grr = back_metric(A, B) #Initializes metric
+    H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr)) #Calculates H_tilde for dR
+    R_array=radial_func(U_bar, goo, grr, ZETA) #Calculates Radial function
+    dR_array=der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX) #Calculates derivative of radial function
+    
+    for i in range(0, N_max-1, 1):
+        dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S, ZETA) #Calculates dA and dB values using our old A and B Vectors
+        A_temp=A[i] + DEL * dA_val #Finds temporary values
+        B_temp=B[i] + DEL * dB_val
+        dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i+1], dR_array[i+1], i+1, epsilon, ZETA_S, ZETA) #Calculates dA and dB using our temporary values
+        A[i+1]=A[i] + (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
+        B[i+1]=B[i] + (DEL / 2) * (dB_val + dB_val2)
+    return A, B
+
+def gr_initialize_metric(ZETA_S, ZETA):
     
     '''
     Initializes our metric equations
@@ -247,6 +292,7 @@ def gr_initialize_metric(ZETA_S):
         b_array: 1D np vector
         h_tilde: 1D np vector
     '''
+    N_max = len(ZETA)
     g_00_array=np.ones(N_max)
     g_rr_array=np.ones(N_max)
     greater_idx=ZETA > ZETA_S #Finds indeces where ZETA is greater than ZETA_S

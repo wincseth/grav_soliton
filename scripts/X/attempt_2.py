@@ -260,7 +260,6 @@ def gr_initialize_metric(ZETA_S):
     return g_00_array, g_rr_array, h_tilde
     
 
-# Main Function------------------------------------------------------------
 
 def main():
     

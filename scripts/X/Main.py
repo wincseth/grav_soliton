@@ -15,7 +15,7 @@ from Functions import Runge_Kutta, finite_differences, gr_initialize_metric
 # User input
 n = 500  # Interval Steps
 ZETA_MAX = 50
-ZETA_Sn = [1]
+ZETA_Sn = [.5, 1]
 loops = 33
 # -----------------------------------------------------------------------
 # Global variables afterwards
@@ -43,10 +43,10 @@ def main():
     
     for j in range(len(ZETA_Sn)): #Calculates A, B, and epsilon for all ZETA_S values we care about
         ZETA_S = ZETA_Sn[j] #Sets ZETA_S value 
-        goo, grr, H_tilde = gr_initialize_metric(ZETA_S) #Initializes A, B, and H_tilde with initial conditions
+        goo, grr, H_tilde = gr_initialize_metric(ZETA_S, ZETA) #Initializes A, B, and H_tilde with initial conditions
         for i in range(loops): #Goes through finite differences and Runge Kutta loop to find self satisfying solution
-            U_bar, epsilon, e_val = finite_differences(goo, grr, ZETA_S)
-            A_array, B_array = Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S)
+            U_bar, epsilon = finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX)
+            A_array, B_array = Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S, ZETA, ZETA_MAX)
             goo = np.exp(2*A_array)
             grr = np.exp(2*B_array)
         U_Bars_matrix[:, j]=U_bar #Saves U_bar
