@@ -2,13 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 500 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [0.2]
-ZETA_MAX = 50
+NUM_ZETA_INTERVALS = 800 # number of zeta intervals, length of the n arrays - 1
+ZETA_S_VALS = [0.01]
+ZETA_MAX = 80
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
-ITERATIONS = 20 # how many times to run through the equations
 MAX_ITERATIONS = 40 # how many times to run through the equations
 TOLERANCE = 1.0e-6 #level of accuracy for epsilon convergence
 
@@ -16,26 +15,11 @@ G_GRAV = 6.7e-39
 M_MASS = 8.2e10
 A_BOHR = 1/(G_GRAV*M_MASS**3)
 
-# initial metric
-def find_fixed_metric(zeta_0, zeta_s):
-    g_00 = np.ones(N_MAX)
-    g_rr = np.ones(N_MAX)
-    outside_idx = ZETA_VALS >= zeta_0
-    inside_idx = ZETA_VALS < zeta_0
-    #print(f"inside={inside_idx}\noutside={outside_idx}")
-    def metric_f(zeta_array):
-        return 1 - zeta_s*(zeta_array**2)/(zeta_0**3)
-    
-    g_00[inside_idx] = (1/4)*(3*np.sqrt(metric_f(zeta_0)) - np.sqrt(metric_f(ZETA_VALS[inside_idx])))**2
-    g_00[outside_idx] = 1 - zeta_s/(ZETA_VALS[outside_idx])
-    g_rr[outside_idx] = 1/g_00[outside_idx]
-    g_rr[inside_idx] = 1/metric_f(ZETA_VALS[inside_idx])
-    
-    h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00/g_rr))
-
-    A_out = np.log(g_00)/2
-    B_out = np.log(g_rr)/2
-    return A_out, B_out, h_tilde
+PLOT_PARAMS = {
+    'u_bar': True,
+    'h_tilde': False,
+    'AB': True
+}
 
 # Klein Gordon equation solver ----------------------------------------------------
 def kg_find_coeffs(A_array, B_array, h_tilde, zeta_s):
@@ -118,7 +102,23 @@ def kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s):
     #print(f"NORMALIZATION CHECK: {np.trapz(u_bars, ZETA_VALS)}\n")
     #print(f"minimum lambda: {lambda_min}")
 
-    return epsilon, u_bars
+    return epsilon, u_bars, hf_out
+
+def gr_initialize_metric(zeta_s):
+    a_array = np.zeros(N_MAX)
+    b_array = np.zeros(N_MAX)
+    g_00_array = np.ones(N_MAX)
+    g_rr_array = np.ones(N_MAX)
+    greater_idx = ZETA_VALS > zeta_s
+    a_array[greater_idx] = np.log(1-zeta_s/ZETA_VALS[greater_idx])/2
+    b_array[greater_idx] = -np.log(1-zeta_s/ZETA_VALS[greater_idx])/2
+    g_00_array[greater_idx] = 1 - zeta_s/ZETA_VALS[greater_idx]
+    g_rr_array[greater_idx] = 1/g_00_array[greater_idx]
+
+    h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
+
+    return a_array, b_array, h_tilde
+
 
 # General Relativity Metric Solver ----------------------------------------------
 def gr_find_Rtilde2_dRtilde2(u_bars, A_array, B_array, h_tilde):
@@ -156,92 +156,98 @@ def gr_find_AB_slope(A_current, B_current, n, epsilon, Rt2, dRt2, zeta_s):
         
     return slope_A, slope_B
 
-def gr_RK2(epsilon, Rt_array, dRt_array, A, B, zeta_s, A_start):
+def gr_BC(u_tilde, a_array, b_array, zeta_s):
+    '''
+    Return end values for A and B
+    '''
+    g00 = np.exp(2*a_array)
+    grr = np.exp(2*b_array)
+
+    # create mu, dmu functions
+    dmu_array = np.sqrt(grr/g00)*u_tilde**2
+    mu_tilde_end = 0
+    for n in range(N_MAX-1):
+        mu_tilde_end += DELTA*(dmu_array[n]+dmu_array[n+1])/2
+    
+
+    A_end = np.log(1-zeta_s*mu_tilde_end/ZETA_VALS[N_MAX-1])/2
+    B_end = -A_end
+    return A_end, B_end
+
+def gr_RK2(epsilon, Rt_array, dRt_array, u_tilde, A_array, B_array, zeta_s):
     '''
     Uses 2nd order Runge-Kutta ODE method to solve arrays
     for A and B. Returns two numpy arrays, for A and B values respectively.
     '''
-    A_array = A
-    B_array = B
-    A_array[0] = A_start
-    B_array[0] = 0
-    for n in range(N_MAX-1):
+    
+    A_array[N_MAX-1], B_array[N_MAX-1] = gr_BC(u_tilde, A_array, B_array, zeta_s)
+    for n in range(N_MAX-1, 0, -1):
         A_n = A_array[n]
         B_n = B_array[n]
         Rt_n = Rt_array[n]
         dRt_n = dRt_array[n]
         slope_A_n, slope_B_n = gr_find_AB_slope(A_n, B_n, n, epsilon, Rt_n, dRt_n, zeta_s)
-        A_temp = A_n + DELTA*slope_A_n
-        B_temp = B_n + DELTA*slope_B_n
-        slope_A_temp, slope_B_temp = gr_find_AB_slope(A_temp, B_temp, n+1, epsilon, Rt_array[n+1], dRt_array[n+1], zeta_s)
+        
+        A_temp = A_n - DELTA*slope_A_n
+        B_temp = B_n - DELTA*slope_B_n
+        slope_A_temp, slope_B_temp = gr_find_AB_slope(A_temp, B_temp, n-1, epsilon, Rt_array[n-1], dRt_array[n-1], zeta_s)
         
         # RK2 method
-        A_array[n+1] = A_n + (DELTA/2)*(slope_A_n + slope_A_temp)
-        B_array[n+1] = B_n + (DELTA/2)*(slope_B_n + slope_B_temp)
-    
+        A_array[n-1] = A_n - (DELTA/2)*(slope_A_n + slope_A_temp)
+        B_array[n-1] = B_n - (DELTA/2)*(slope_B_n + slope_B_temp)
+    A_array[0] = 0
+    B_array[0] = 0
     return A_array, B_array
 
 # Main function that brings it together
 def main():
+    
     for j in ZETA_S_VALS:
         zeta_s = j
-        A_array, B_array, h_tilde = find_fixed_metric(0.5, zeta_s)
-        A_start = A_array[0]
+        A_array, B_array, h_tilde = gr_initialize_metric(zeta_s)
         epsilon = -1 # initial guess
-        AB_adjustments = 0
-        AB_sum = 1
-
+    
         #iterate through equations until convergence
-        while abs(AB_sum) > 1e-8:
-            AB_adjustments += 1
-            for i in range(MAX_ITERATIONS):
-                print(f"\n\n----- In iter. num. {i+1}, with {AB_adjustments} adjustment(s), zeta_s={zeta_s}:\n")
-                prev_epsilon = epsilon # used to check for epsilon convergence
-                
-                # Loop through Klein Gordon and Metric equations
-                epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
-                R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
-                A_array, B_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start)
-                
-                # recalculate metric elements and h_tilde
-                h_tilde[0] = 0
-                g_00_array = np.exp(2*A_array)
-                g_rr_array = np.exp(2*B_array)
-                h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
-                
-                AB_sum = A_array[N_MAX-1]+B_array[N_MAX-1] # needs to be zero
+        for i in range(MAX_ITERATIONS):
+            print(f"\n\n----- In iteration number {i+1}, zeta_s={zeta_s}:\n")
+            
+            prev_epsilon = epsilon # used to check for epsilon convergence
+            
+            # Loop through Klein Gordon and Metric equations
+            epsilon, u_bar_array, hf_out = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
+            R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
+            A_array, B_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, u_tilde, A_array, B_array, zeta_s)
+            # recalculate metric elements and h_tilde
+            h_tilde[0] = 0
+            g_00_array = np.exp(2*A_array)
+            g_rr_array = np.exp(2*B_array)
+            h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
 
-                print(f"Calculated (lowest) epsilon value: {epsilon}\n")
-                print(f"A_end + B_end = {AB_sum}, A_0 = {A_start}")
+            print(f"Calculated (lowest) epsilon value: {epsilon}\n")
+            #print(f"    A vals: {A_array}\nB vals: {B_array}\n")
 
-                A_start -= AB_sum
-
-                # check for epsilon convergence within tolerance
-                if abs(epsilon - prev_epsilon) <= TOLERANCE:
-                    iter_to_tolerance = i+1
-                    print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustment")
-                    break
-        print(f"\n ----------- Iterations and adjustments finished ------------")
-        print(f"In {AB_adjustments} adjustments (zeta_s={zeta_s}) the calculated epsilon is {epsilon}, accurate to {TOLERANCE}")
+            # check for epsilon convergence within tolerance
+            if abs(epsilon - prev_epsilon) <= TOLERANCE:
+                iter_to_tolerance = i+1
+                break
+        print(f"In {iter_to_tolerance} iterations the calculated epsilon is {epsilon}, accurate to {TOLERANCE}")
+            
         g_00_array = np.exp(2*A_array)
         g_rr_array = np.exp(2*B_array)
 
-        plt.figure(1)
-        plt.plot(ZETA_VALS, u_bar_array, color='blue', alpha=0.5, marker='.', label="$u_{bar}$" + f", A_end+B_end={AB_sum}")
-        plt.xlim(0, 20)
-        plt.xlabel("$\zeta$")
-        plt.legend()
-        plt.grid(True)
-        plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}\nTol: {TOLERANCE}\nZ_max={ZETA_MAX}, Z_int={NUM_ZETA_INTERVALS}, $A_0$={A_start}")
+        fig_plot_num = 1
+        for key, value in PLOT_PARAMS.items():
+            plt.figure(fig_plot_num)
+            
+        #plt.figure(1)
+        plt.plot(ZETA_VALS, abs(u_bar_array), alpha=0.75, label=f"$\zeta_s={zeta_s}$, $\epsilon={epsilon}$")
+        #plt.plot(ZETA_VALS, hf_out, alpha=0.75, label="h tilde fraction", marker='.')
+        
+        plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}")
 
-        plt.figure(2)
-        plt.plot(ZETA_VALS, A_array, color='blue', alpha=0.5, marker='.', label="A")
-        plt.plot(ZETA_VALS, B_array, color='red', alpha=0.5, marker='.', label="B")
-        plt.xlim(0, 20)
-        plt.xlabel(f"$\zeta$")
-        plt.legend()
-        plt.grid(True)
-        plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}\nTol: {TOLERANCE}\nZ_max={ZETA_MAX}, Z_int={NUM_ZETA_INTERVALS}, $A_0$={A_start}")
+    plt.xlim(0, 20)
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
 _ = main()

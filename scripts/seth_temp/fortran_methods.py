@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 800 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [0.01, 1]
-ZETA_MAX = 40
+NUM_ZETA_INTERVALS = 2000 # number of zeta intervals, length of the n arrays - 1
+ZETA_S_VALS = [0.01, 0.1, 0.2, 0.5, 1]
+ZETA_MAX = 100
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
@@ -18,7 +18,8 @@ A_BOHR = 1/(G_GRAV*M_MASS**3)
 PLOT_PARAMS = {
     'u_bar': False,
     'h_tilde': False,
-    'AB': True
+    'AB': False,
+    'mu_tilde': True
 }
 
 # Klein Gordon equation solver ----------------------------------------------------
@@ -165,14 +166,16 @@ def gr_BC(u_tilde, a_array, b_array, zeta_s):
 
     # create mu, dmu functions
     dmu_array = np.sqrt(grr/g00)*u_tilde**2
+    mu_tilde_array = np.zeros(N_MAX)
     mu_tilde_end = 0
     for n in range(N_MAX-1):
         mu_tilde_end += DELTA*(dmu_array[n]+dmu_array[n+1])/2
+        mu_tilde_array[n] = mu_tilde_end
     
 
     A_end = np.log(1-zeta_s*mu_tilde_end/ZETA_VALS[N_MAX-1])/2
     B_end = -A_end
-    return A_end, B_end
+    return A_end, B_end, mu_tilde_array
 
 def gr_RK2(epsilon, Rt_array, dRt_array, u_tilde, A_array, B_array, zeta_s):
     '''
@@ -180,7 +183,7 @@ def gr_RK2(epsilon, Rt_array, dRt_array, u_tilde, A_array, B_array, zeta_s):
     for A and B. Returns two numpy arrays, for A and B values respectively.
     '''
     
-    A_array[N_MAX-1], B_array[N_MAX-1] = gr_BC(u_tilde, A_array, B_array, zeta_s)
+    A_array[N_MAX-1], B_array[N_MAX-1], mu_tilde_array = gr_BC(u_tilde, A_array, B_array, zeta_s)
     for n in range(N_MAX-1, 0, -1):
         A_n = A_array[n]
         B_n = B_array[n]
@@ -197,7 +200,7 @@ def gr_RK2(epsilon, Rt_array, dRt_array, u_tilde, A_array, B_array, zeta_s):
         B_array[n-1] = B_n - (DELTA/2)*(slope_B_n + slope_B_temp)
     A_array[0] = 0
     B_array[0] = 0
-    return A_array, B_array
+    return A_array, B_array, mu_tilde_array
 
 # Main function that brings it together
 def main():
@@ -207,7 +210,8 @@ def main():
         'u_bar': True,
         'h_tilde': True,
         'A_values': True,
-        'B_values': True
+        'B_values': True,
+        'mu_tilde': True
     }
     fig_idx = 1
     for j in ZETA_S_VALS:
@@ -224,7 +228,7 @@ def main():
             # Loop through Klein Gordon and Metric equations
             epsilon, u_bar_array, hf_out = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
             R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
-            A_array, B_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, u_tilde, A_array, B_array, zeta_s)
+            A_array, B_array, mu_tilde_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, u_tilde, A_array, B_array, zeta_s)
             # recalculate metric elements and h_tilde
             h_tilde[0] = 0
             g_00_array = np.exp(2*A_array)
@@ -239,6 +243,7 @@ def main():
             data['h_tilde'] = h_tilde
             data['A_values'] = A_array
             data['B_values'] = B_array
+            data['mu_tilde'] = mu_tilde_array
 
             # check for epsilon convergence within tolerance
             if abs(epsilon - prev_epsilon) <= TOLERANCE:
@@ -267,17 +272,17 @@ def main():
             plt.xlabel("$\zeta$")
             plt.legend()
             plt.grid(True)
+        '''
+        plt.figure(100+fig_idx)
+        plt.plot(ZETA_VALS, g_00_array/g_rr_array, label="g_00/g_rr", alpha=0.5, marker='.')
+        plt.xlim(0, 20)
+        plt.xlabel("$\zeta$")
+        plt.legend()
+        plt.grid(True)
+        '''
         plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}\nIter: {iter_to_tolerance}, Tol: {TOLERANCE}\nZ_max={ZETA_MAX}, Z_int={NUM_ZETA_INTERVALS}")
-            
-        #plt.figure(1)
-        #plt.plot(ZETA_VALS, abs(u_bar_array), alpha=0.75, label=f"$\zeta_s={zeta_s}$, $\epsilon={epsilon}$")
-        #plt.plot(ZETA_VALS, hf_out, alpha=0.75, label="h tilde fraction", marker='.')
-        
-        #plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}")
 
-    #plt.xlim(0, 20)
-    #plt.legend()
-    #plt.grid(True)
     plt.show()
 
-_ = main()
+if __name__ == "__main__":
+    main()
