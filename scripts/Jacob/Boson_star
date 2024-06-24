@@ -1,13 +1,14 @@
+#created by Jacob Herman
+
 import numpy as np
 import matplotlib.pyplot as plt
-
 #global variables-----------------------------------------------------------------
 
 #users input for the code
 n = 500 #interval step
 ZETA_MAX = 50 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
-loops = 20 #number of loops the program will iterate through
+loops = 40 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
 #global variables after user input
 DELTA =(ZETA_MAX)/(n + 1)
@@ -20,30 +21,41 @@ M = 8.2e10 #if a equals the atomic Bohr radius
 #grr = 1/g00 #radial metric in terms of zeta's
 a = 1 /(G*M**3)#gravitational bohr radius
 R_S = 2*G*M #schwarzschild radius
+TOLERANCE = 1.0e-6
 
 #functions------------------------------------------------------------------------
 
-def initialize_metric(ZETA_S):
+def initialize_metric(zeta_0, zeta_s):
     '''perameters: 1-d array for A & B
     returns: 1-d array for g00 & grr'''
     A_array = np.zeros(N_max) #initializes the A_array as zeros
     B_array = np.zeros(N_max) #initializes the B_array as zeros
     g00 = np.ones(N_max)#initializes g00
     grr = np.ones(N_max)#initializes grr
-    greater_indx = ZETA > ZETA_S
+    outside_idx = ZETA >= zeta_0
+    inside_idx = ZETA < zeta_0
+    #print(f"inside={inside_idx}\noutside={outside_idx}")
+    def metric_f(zeta_array):
+        return 1 - zeta_s*(zeta_array**2)/(zeta_0**3)
+    
+    g00[inside_idx] = (1/4)*(3*np.sqrt(metric_f(zeta_0)) - np.sqrt(metric_f(ZETA[inside_idx])))**2
+    g00[outside_idx] = 1 - zeta_s/(ZETA[outside_idx])
+    grr[outside_idx] = 1/g00[outside_idx]
+    grr[inside_idx] = 1/metric_f(ZETA[inside_idx])
+    
+    h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
+
+    A = np.log(g00)/2
+    B = np.log(grr)/2
+    '''_indx = ZETA > ZETA_S
     
     A_array[greater_indx] = np.log(1 - ZETA_S/ZETA[greater_indx])/2
-    if ZETA_S == 0.01:
-        A_array[0] = -0.0015845
-    elif ZETA_S == 0.1:
-        A_array[0] = -0.01643955
-    elif ZETA_S == 0.2
-        A_array[0] = 0
+    
     B_array[greater_indx] = -np.log(1 - ZETA_S/ZETA[greater_indx])/2
     g00[greater_indx] = 1 -ZETA_S/ZETA[greater_indx]
     grr[greater_indx] = 1/g00[greater_indx]
-    h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
-    return A_array, B_array, h_tilde
+    h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))'''
+    return A, B, h_tilde
 
 def A_B_end(u_tilde, A, B, ZETA_S):
     '''perameters: array
@@ -98,7 +110,7 @@ def KG_solver(C, D, F, A, B, ZETA_S):
     e_vals, e_vecs = np.linalg.eig(matrix)#e_vals are lamdas, e_vecs are ubars
     lamda = np.min(e_vals)#finds the minimum e_val and saves as lamda
     u_bar = e_vecs[:, np.argmin(e_vals)]#u_bar is saved as an array of minimum values
-    epsilon = lamda/(1 + np.sqrt(1 + (ZETA_S*lamda)/2))#calculates epsilon form lamda
+    epsilon = lamda/(1 + np.sqrt(1 + (ZETA_S*lamda/2)))#calculates epsilon form lamda
     g00 = np.exp(2*A)
     grr = np.exp(2*B)
     u_tilde = u_bar*np.sqrt(g00/grr)
@@ -136,10 +148,12 @@ def temp_slope(ZETA, R_tilde2, dR, A, B, ZETA_S, e):
         dB = -(grr-1)/(2*ZETA) + (ZETA_S*ZETA*grr*R_tilde2)/4 + ((ZETA_S**2)*ZETA/8)*(dR) + ((ZETA_S*ZETA/4)*(1+(ZETA_S*e)/2)**2) * (grr/g00) * (R_tilde2)
     return dA, dB
 
-def R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e):
+def R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e, A_start):
     '''parameters all arrays except e
     return two arrays A's and B's'''
-    A[N_max - 1], B[N_max - 1], M = A_B_end(u_tilde, A, B, ZETA_S)
+    #A[N_max - 1], B[N_max - 1], M = A_B_end(u_tilde, A, B, ZETA_S)
+    A[0] = A_start
+    B[0] = 0
     for i in range(0,N_max -1):
         dA_slope, dB_slope = temp_slope(ZETA[i], R_tilde2[i], dR[i], A[i], B[i], ZETA_S, e)
         if i == 0:
@@ -153,8 +167,6 @@ def R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e):
         
         A[i+1] = A[i] + (DELTA/2)*(dA_slope  + dA_temp)
         B[i+1] = B[i] + (DELTA/2)*(dB_slope + dB_temp)
-    #A[0] = 0
-    B[0] = 0
     return A, B
 
 def energy_and_mass(ZETA_S, e):
@@ -179,3 +191,107 @@ def A_B_sphere_app(ZETA, ZETA_S):
     grr = np.exp(2*B_new)
     h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
     return A_new, B_new, h_tilde
+
+#Main Function-------------------------------------------------------
+
+def main():
+    #zeta_s = [.01, .1, .2, 0.5] #how relativistic the function is
+    #zeta_s = [0.01, 0.1, 0.2, 0.3, 0.4]
+    zeta_s = [.01]
+    e_array = np.zeros_like(zeta_s)
+    E_m = np.zeros_like(zeta_s)
+    M_m = np.zeros_like(zeta_s)
+    
+    for j, zetta_s_current in enumerate(zeta_s):
+        values = []
+        ZETA_S = zeta_s[j]
+        #A, B, h_tilde = initialize_metric(0.5, ZETA_S)
+        A, B, h_tilde = A_B_sphere_app(ZETA, ZETA_S)
+        A_start = A[0]
+        e = -1
+        AB_adjustment = 0
+        A_B_sum = 1
+        while abs(A_B_sum) > 1e-9:
+            AB_adjustment += 1
+            for i in range(loops):
+                print(f"/n/n ----- in iter.nim. {i+1}, with {AB_adjustment} adjusments, zeta_s = {ZETA_S}")
+                prev_e = e
+                print("loops= ", i + 1," ZETA_S= ", ZETA_S)
+                C, D, F = KG_values(A, B, ZETA_S, h_tilde)
+                e, u_bar = KG_solver(C, D, F, A, B, ZETA_S)
+                R_tilde2, dR, u_tilde = gr_R_tildes(A, B, u_bar, h_tilde)
+                #A_end, B_end, mu_tilde = A_B_end(u_tilde, A, B, ZETA_S)
+                A, B = R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e, A_start)
+
+                A_B_sum = A[N_max - 1] + B[N_max - 1]
+                print("A_B_sum= ", A_B_sum)
+                A_start -= A_B_sum
+                g00 = np.exp(2*A)
+                grr = np.exp(2*B)
+                h_tilde[0] = 0
+                h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
+                
+                if abs(e - prev_e) <= TOLERANCE:
+                    iter_to_tolerance = i + 1
+                    print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustments")
+                    x = 1
+                    break
+        U_abs = abs(u_bar)
+        g00 = np.exp(2*A)
+        grr = np.exp(2*B)
+        values.append(e)
+        array = np.array(values)
+        e_array[j] = array[len(array) - 1]
+        E_m[j], M_m[j] = energy_and_mass(ZETA_S, e_array[j])
+        x = A[28] + B[28]
+        print("A + B= ", x)
+        print("ZETA_S= ", zeta_s)
+        print("Epsilon array= ",e_array) 
+        print("E/M= ", E_m)
+        print("M/Mpl= ", M_m)
+        #print("U= ", U_abs)
+        print("epsilon= ",array)
+        print("lowest epsilon= ", array[len(array) - 1])
+        plt.figure(1)
+        plt.plot(ZETA, U_abs, label=zetta_s_current, alpha = 0.5, marker = '.')
+        plt.xlabel("ZETA")
+        plt.xlim(0,30)
+        plt.ylabel("U_bar")
+        plt.legend()
+        plt.grid(True)
+        plt.figure(2)
+        #plt.subplot(211)
+        plt.plot(ZETA, A, label= 'A')
+        plt.plot(ZETA, B, label= 'B')
+        plt.legend()
+        plt.xlabel("ZETA")
+        plt.xlim(0,30)
+        plt.ylabel("arrays")
+        plt.grid(True)
+        
+        '''
+        plt.figure(3)
+        plt.plot(ZETA, R_tilde2, label=zetta_s_current)
+        plt.xlabel("ZETA")
+        plt.xlim(0,30)
+        plt.ylabel("R_TILDE")
+        plt.legend()
+        plt.grid(True)
+        plt.figure(4)
+        plt.plot(ZETA, mu_tilde, label=zetta_s_current)
+        plt.xlabel("ZETA")
+        plt.xlim(0,60)
+        plt.ylabel("mu_tilde")
+        plt.legend()
+        plt.grid(True)
+        plt.figure(5)
+        plt.plot(ZETA, A_new, label=zetta_s_current)
+        plt.plot(ZETA, B_new, label=zetta_s_current)
+        plt.xlabel("ZETA")
+        plt.xlim(0,20)
+        plt.legend()
+        plt.ylabel("A_B_new")
+        plt.grid(True)'''
+    plt.show()
+if __name__ == "__main__":
+    main()

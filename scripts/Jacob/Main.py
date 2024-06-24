@@ -16,8 +16,9 @@ from functions import ZETA
 #Main Function-------------------------------------------------------
 
 def main():
-    #zeta_s = [.01, .1, .2, 0.5, 1] #how relativistic the function is
-    zeta_s = [0.01, 0.1, 0.2, 0.3, 0.4]
+    #zeta_s = [.01, .1, .2, 0.5] #how relativistic the function is
+    #zeta_s = [0.01, 0.1, 0.2, 0.3, 0.4]
+    zeta_s = [0.01]
     e_array = np.zeros_like(zeta_s)
     E_m = np.zeros_like(zeta_s)
     M_m = np.zeros_like(zeta_s)
@@ -25,8 +26,8 @@ def main():
     for j, zetta_s_current in enumerate(zeta_s):
         values = []
         ZETA_S = zeta_s[j]
-        #A, B, h_tilde = initialize_metric(ZETA_S)
-        A, B, h_tilde = A_B_sphere_app(ZETA, ZETA_S)
+        A, B, h_tilde = initialize_metric(ZETA_S)
+        #A, B, h_tilde = A_B_sphere_app(ZETA, ZETA_S)
         for i in range(loops):
             print("loops= ", i + 1," ZETA_S= ", ZETA_S)
             C, D, F = KG_values(A, B, ZETA_S, h_tilde)
@@ -46,11 +47,13 @@ def main():
         array = np.array(values)
         e_array[j] = array[len(array) - 1]
         E_m[j], M_m[j] = energy_and_mass(ZETA_S, e_array[j])
+        x = A[28] + B[28]
+        print("A + B= ", x)
         print("ZETA_S= ", zeta_s)
         print("Epsilon array= ",e_array) 
         print("E/M= ", E_m)
         print("M/Mpl= ", M_m)
-        print("U= ", U_abs)
+        #print("U= ", U_abs)
         print("epsilon= ",array)
         print("lowest epsilon= ", array[len(array) - 1])
         plt.figure(1)
@@ -61,18 +64,15 @@ def main():
         plt.legend()
         plt.grid(True)
         plt.figure(2)
-        plt.subplot(211)
-        plt.plot(ZETA, A, label=zetta_s_current)
+        #plt.subplot(211)
+        plt.plot(ZETA, A, label= 'A')
+        plt.plot(ZETA, B, label= 'B')
+        plt.legend()
         plt.xlabel("ZETA")
         plt.xlim(0,30)
-        plt.ylabel("A_array")
+        plt.ylabel("arrays")
         plt.grid(True)
-        plt.subplot(212)
-        plt.plot(ZETA, B, label=zetta_s_current)
-        plt.xlabel("ZETA")
-        plt.xlim(0,30)
-        plt.ylabel("B_array")
-        plt.grid(True)
+        
         '''
         plt.figure(3)
         plt.plot(ZETA, R_tilde2, label=zetta_s_current)
