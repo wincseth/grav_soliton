@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 500 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [0.2]
-ZETA_MAX = 50
+NUM_ZETA_INTERVALS = 800 # number of zeta intervals, length of the n arrays - 1
+ZETA_S_VALS = [0.3]
+ZETA_MAX = 80
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
@@ -78,7 +78,7 @@ def kg_find_coeffs(A_array, B_array, h_tilde, zeta_s):
             h_tilde_frac = 0
             hf_out[n] = h_tilde_frac
         c_consts[n] = g_frac*h_tilde_frac + (4/zeta_s)*np.exp(A_array[n])*np.sinh(A_array[n]) + 2*g_frac/(DELTA**2)
-
+    #print(f"htildefrac: {hf_out}")
     return c_consts, d_consts, f_consts, hf_out
 
 def kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s):
@@ -181,46 +181,98 @@ def gr_RK2(epsilon, Rt_array, dRt_array, A, B, zeta_s, A_start):
     
     return A_array, B_array
 
+def find_AB_root(x1, x2, fx1, fx2, tol):
+    '''
+    Uses secant method to find a new guess for x, to be used
+    with RK2 in finding an initial condition for A.
+
+    params:
+    x1: (float) first initial A guess
+    x2: (float) second initial A guess
+    fx1: (float) A end based off of x1
+    fx2: (float) B end based off of x2
+    tol: (float) tolerance for checking for convergence
+
+    returns:
+    x1_new: (float) either x1 or x2, whichever has smaller abs(f)
+    x2_new: (float) zero intercept and new guess
+    meets_tol: (bool) whether or not tolerance is met
+    '''
+    meets_tol = False
+    if abs(fx1) < abs(fx2):
+        x1_new = x1
+    else:
+        x1_new = x2
+    
+    x2_new = x2 - fx2*(x2 - x1)/(fx2 - fx1)
+    if abs(x2_new - x1_new) <= tol*(abs(x2_new) + abs(x1_new))/2:
+        meets_tol = True
+    return x1_new, x2_new, meets_tol
+
 # Main function that brings it together
 def main():
     for j in ZETA_S_VALS:
         zeta_s = j
-        A_array, B_array, h_tilde = find_fixed_metric(0.5, zeta_s)
+        A_array, B_array, h_tilde = find_fixed_metric(10, zeta_s)
         A_start = A_array[0]
         epsilon = -1 # initial guess
-        AB_adjustments = 0
         AB_sum = 1
 
         #iterate through equations until convergence
-        while abs(AB_sum) > 1e-8:
-            AB_adjustments += 1
-            for i in range(MAX_ITERATIONS):
-                print(f"\n\n----- In iter. num. {i+1}, with {AB_adjustments} adjustment(s), zeta_s={zeta_s}:\n")
-                prev_epsilon = epsilon # used to check for epsilon convergence
-                
-                # Loop through Klein Gordon and Metric equations
-                epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
-                R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
-                A_array, B_array = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start)
-                
-                # recalculate metric elements and h_tilde
-                h_tilde[0] = 0
-                g_00_array = np.exp(2*A_array)
-                g_rr_array = np.exp(2*B_array)
-                h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
-                
-                AB_sum = A_array[N_MAX-1]+B_array[N_MAX-1] # needs to be zero
+        for i in range(MAX_ITERATIONS):
+            print(f"\n\n----- In iter. num. {i+1}, zeta_s={zeta_s}:\n")
+            prev_epsilon = epsilon # used to check for epsilon convergence
+            
+            # Loop through Klein Gordon and Metric equations
+            epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
+            R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
+            
+            meets_tol = False
+            A_start1 = -0.1
+            A_start2 = -0.5
+            AB_adjustments = 0
+            tol = 1e-6
+            while meets_tol == False and AB_adjustments < 50:
+                AB_adjustments+=1
+                A_array1, B_array1 = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start1)
+                fx1 = A_array1[N_MAX-1] + B_array1[N_MAX-1]
+                A_array2, B_array2 = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start2)
+                fx2 = A_array2[N_MAX-1] + B_array2[N_MAX-1]
+                A_start1, A_start2, meets_tol = find_AB_root(A_start1, A_start2, fx1, fx2, tol)
+                print(f"        New A_start guess: {A_start2}")
+            A_array = A_array2
+            B_array = B_array2
+            A_start = A_start2
+            print(f"Runge kutta done, took {AB_adjustments} adjustments")
+            
+            # recalculate metric elements and h_tilde
+            h_tilde[0] = 0
+            g_00_array = np.exp(2*A_array)
+            g_rr_array = np.exp(2*B_array)
+            h_tilde = ZETA_VALS*np.sqrt(np.sqrt(g_00_array/g_rr_array))
 
-                print(f"Calculated (lowest) epsilon value: {epsilon}\n")
-                print(f"A_end + B_end = {AB_sum}, A_0 = {A_start}")
+            #A_schw = np.log(1 - zeta_s/ZETA_VALS[N_MAX-1])/2
+            #B_schw = np.log(1/(1 - zeta_s/ZETA_VALS[N_MAX-1]))/2
+            A_end = A_array[N_MAX-1]
+            B_end = B_array[N_MAX-1]
 
-                A_start -= AB_sum
+            AB_sum = A_array[N_MAX-1]+B_array[N_MAX-1] # needs to be zero
+            print(f"A_end + B_end = {AB_sum}, A_0 = {A_start}")
+            #print(f"A start: {A_start}\nA end: {A_array[N_MAX-1]}, B end: {B_array[N_MAX-1]}")
+            #print(f"A schw: {A_schw}, B schw: {B_schw}, schw. sum: {A_schw + B_schw}")
+            print(f"Calculated (lowest) epsilon value: {epsilon}\n")
 
-                # check for epsilon convergence within tolerance
-                if abs(epsilon - prev_epsilon) <= TOLERANCE:
-                    iter_to_tolerance = i+1
-                    print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustment")
-                    break
+            #A_start -= AB_sum
+
+            #A_diff = A_end - A_schw
+            #print(f"A_diff: {A_diff}")
+            #A_start -= A_diff
+
+            # check for epsilon convergence within tolerance
+            if abs(epsilon - prev_epsilon) <= TOLERANCE:
+                iter_to_tolerance = i+1
+                print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustment")
+                break
         print(f"\n ----------- Iterations and adjustments finished ------------")
         print(f"In {AB_adjustments} adjustments (zeta_s={zeta_s}) the calculated epsilon is {epsilon}, accurate to {TOLERANCE}")
         g_00_array = np.exp(2*A_array)
