@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 800 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [0.3]
-ZETA_MAX = 80
+NUM_ZETA_INTERVALS = 1000 # number of zeta intervals, length of the n arrays - 1
+ZETA_S_VALS = [0.5]
+ZETA_MAX = 50
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
 N_MAX = len(ZETA_VALS)
@@ -225,19 +225,32 @@ def main():
             
             # Loop through Klein Gordon and Metric equations
             epsilon, u_bar_array = kg_find_epsilon_u(A_array, B_array, h_tilde, zeta_s)
-            R_tilde2, dR_tilde2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array, B_array, h_tilde)
+            
             
             meets_tol = False
-            A_start1 = -0.1
-            A_start2 = -0.5
+            A_start1 = -0.01
+            A_start2 = -1
             AB_adjustments = 0
-            tol = 1e-6
+            tol = 1e-10
+            A_array1 = A_array
+            B_array1 = B_array
+            A_array2 = A_array
+            B_array2 = B_array
             while meets_tol == False and AB_adjustments < 50:
                 AB_adjustments+=1
-                A_array1, B_array1 = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start1)
+                
+                # do RK for two different A_0's
+                h_tilde1 = ZETA_VALS*np.sqrt(np.sqrt(np.exp(2*A_array1)/np.exp(2*B_array1)))
+                R_tilde2_1, dR_tilde2_1, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array1, B_array1, h_tilde1)
+                A_array1, B_array1 = gr_RK2(epsilon, R_tilde2_1, dR_tilde2_1, A_array1, B_array1, zeta_s, A_start1)
                 fx1 = A_array1[N_MAX-1] + B_array1[N_MAX-1]
-                A_array2, B_array2 = gr_RK2(epsilon, R_tilde2, dR_tilde2, A_array, B_array, zeta_s, A_start2)
+
+                h_tilde2 = ZETA_VALS*np.sqrt(np.sqrt(np.exp(2*A_array2)/np.exp(2*B_array2)))
+                R_tilde2_2, dR_tilde2_2, u_tilde = gr_find_Rtilde2_dRtilde2(u_bar_array, A_array2, B_array2, h_tilde2)
+                A_array2, B_array2 = gr_RK2(epsilon, R_tilde2_2, dR_tilde2_2, A_array2, B_array2, zeta_s, A_start2)
                 fx2 = A_array2[N_MAX-1] + B_array2[N_MAX-1]
+                
+                # use RK results to do secant method for better A_0 guess
                 A_start1, A_start2, meets_tol = find_AB_root(A_start1, A_start2, fx1, fx2, tol)
                 print(f"        New A_start guess: {A_start2}")
             A_array = A_array2
