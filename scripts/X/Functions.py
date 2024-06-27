@@ -62,12 +62,13 @@ def matrix_const(goo, grr, ZETA, ZETA_S, ZETA_MAX):
         grr: 1D np array
         ZETA: 1D np array
         ZETA_S: np scalar
+        ZETA_MAX: np scalar
     Outputs:
         C: 1D np array
         D: 1D np array
         E: 1D np array
     """
-    N_max = len(ZETA)
+    N_max = len(ZETA) #Building constants needed
     DEL = ZETA_MAX/len(ZETA)
     
     A, B = metric(goo, grr)
@@ -95,6 +96,7 @@ def matrix_build(C, D, E, ZETA):
         C: 1D np array
         D: 1D np array
         E: 1D np array
+        ZETA: 1D np array
     Outputs:
         Matrix: 2D np array
     """
@@ -114,10 +116,11 @@ def finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX):
     Uses a finite difference approach to calculate our U_bar array and our epsilon value
 
     Parameters:
-        A: 1D np array
-        B: 1D np array
         goo: 1D np array
         grr: 1D np array
+        ZETA_S: np scalar
+        ZETA: 1D np array
+        ZETA_MAX: np scalar
     Outputs:
         U_bar: 1D np array
         epsilon: np scalar
@@ -169,11 +172,15 @@ def der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX):
     Derivative of R function
 
     Parameters:
-        R: 1D np array
+        U_bar: 1D np array
+        H_tilde: 1D np array
+        goo: 1D np array
+        grr: 1D np array
+        ZETA_MAX: np scalar
     Outputs:
         dR: 1D np array
     """
-    N_max = len(U_bar)
+    N_max = len(U_bar) #Building constants needed
     DEL = ZETA_MAX/N_max
     
     dR = np.zeros_like(U_bar) #Initializes another zero vector
@@ -198,6 +205,7 @@ def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S, ZETA):
         n: np scalar
         epsilon; np scalar
         ZETA_S: np scalar
+        ZETA: 1D np array
     Outputs:
         dA: np scalar
         dB: np scalar
@@ -222,6 +230,9 @@ def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S, ZETA, ZETA_MAX):
         epsilon: np scalar
         goo: 1D np array
         grr: 1D np array
+        ZETA_S: np scalar
+        ZETA: 1D np array
+        ZETA_MAX: np scalar
     Outputs:
         A: 1D np array
         B: 1D np array
@@ -249,7 +260,7 @@ def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S, ZETA, ZETA_MAX):
         B[i-1]=B[i] - (DEL / 2) * (dB_val + dB_val2)
     return A, B
 
-def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX):
+def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX, a_start):
 
     """
     Performs the Runge Kutta of the second order technique on A and B from 0 to ZETA_MAX
@@ -260,6 +271,8 @@ def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX):
         A: 1D np array
         B: 1D np array
         ZETA_S: np scalar
+        ZETA: 1D np array
+        ZETA_MAX: np scalar
     Outputs:
         A: 1D np array
         B: 1D np array
@@ -270,6 +283,7 @@ def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX):
     H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr)) #Calculates H_tilde for dR
     R_array=radial_func(U_bar, goo, grr, ZETA) #Calculates Radial function
     dR_array=der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX) #Calculates derivative of radial function
+    A[0] = a_start
     
     for i in range(0, N_max-1, 1):
         dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S, ZETA) #Calculates dA and dB values using our old A and B Vectors
@@ -278,7 +292,10 @@ def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX):
         dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i+1], dR_array[i+1], i+1, epsilon, ZETA_S, ZETA) #Calculates dA and dB using our temporary values
         A[i+1]=A[i] + (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
         B[i+1]=B[i] + (DEL / 2) * (dB_val + dB_val2)
-    return A, B
+        
+    a_new = np.copy(A)
+    b_new = np.copy(B)
+    return a_new, b_new
 
 def gr_initialize_metric(ZETA_S, ZETA):
     
@@ -287,9 +304,10 @@ def gr_initialize_metric(ZETA_S, ZETA):
     
     Parameters:
         ZETA_S: np scalar
+        ZETA: 1D np array
     Outputs:
-        a_array: 1D np vector
-        b_array: 1D np vector
+        g_00_array: 1D np vector
+        g_rr_array: 1D np vector
         h_tilde: 1D np vector
     '''
     N_max = len(ZETA)
@@ -303,3 +321,25 @@ def gr_initialize_metric(ZETA_S, ZETA):
 
     return g_00_array, g_rr_array, h_tilde
     
+
+def secant_root_alg(x_n, addin, x_n_bef, addin_bef):
+    
+    '''
+    algorithm to solve for the zeros using the secant root algorithm
+    
+    Parameters:
+        x_n: np scalar
+        x_n_bef: np scalar
+        addin: np scalar
+        addin_bef: np scalar
+    Outputs:
+        zero_cand: np scalar
+    '''
+    if abs(addin_bef) < abs(addin):
+        x1_new = x_n_bef
+    else:
+        x1_new = x_n
+    
+    x2_new = x_n - addin*(x_n - x_n_bef)/(addin - addin_bef)
+    
+    return x1_new, x2_new
