@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 #global variables-----------------------------------------------------------------
 
 #users input for the code
-n = 500 #interval step
+n = 1000 #interval step
 ZETA_MAX = 50 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
-loops = 40 #number of loops the program will iterate through
+loops = 20 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
 #global variables after user input
 DELTA =(ZETA_MAX)/(n + 1)
@@ -62,6 +62,7 @@ def A_B_end(u_tilde, A, B, ZETA_S):
     return: array'''
     g00 = np.exp(2*A)
     grr = np.exp(2*B)
+    
     mu_tilde = np.zeros(N_max)
     dmu_array = np.sqrt(grr/g00)*u_tilde**2
     mu_tilde_end = 0
@@ -133,7 +134,7 @@ def gr_R_tildes(A, B, u_bar, h_tilde):
             if i != N_max-1:
                 dR_tilde2[i] = (u_tilde[i+1] - u_tilde[i-1])/(2*DELTA*h_tilde[i]) - u_tilde[i]*(h_tilde[i+1]-h_tilde[i-1])/(2*DELTA*h_tilde[i]**2)
                 dR_tilde2[i] = dR_tilde2[i]**2
-    return R_tilde2, dR_tilde2, u_tilde
+    return R_tilde2, dR_tilde2
 
 def temp_slope(ZETA, R_tilde2, dR, A, B, ZETA_S, e):
     '''input single values
@@ -148,13 +149,13 @@ def temp_slope(ZETA, R_tilde2, dR, A, B, ZETA_S, e):
         dB = -(grr-1)/(2*ZETA) + (ZETA_S*ZETA*grr*R_tilde2)/4 + ((ZETA_S**2)*ZETA/8)*(dR) + ((ZETA_S*ZETA/4)*(1+(ZETA_S*e)/2)**2) * (grr/g00) * (R_tilde2)
     return dA, dB
 
-def R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e, A_start):
+def R_K(A, B, R_tilde2, dR, ZETA_S, e, A_start):
     '''parameters all arrays except e
     return two arrays A's and B's'''
     #A[N_max - 1], B[N_max - 1], M = A_B_end(u_tilde, A, B, ZETA_S)
     A[0] = A_start
     B[0] = 0
-    for i in range(0,N_max -1):
+    for i in range(N_max -1):
         dA_slope, dB_slope = temp_slope(ZETA[i], R_tilde2[i], dR[i], A[i], B[i], ZETA_S, e)
         if i == 0:
             A_temp = 0#keeps our temp values from blowing up to infinity or being undefined
@@ -164,18 +165,37 @@ def R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e, A_start):
             B_temp = B[i] + DELTA*temp_slope(ZETA[i], R_tilde2[i], dR[i], A[i], B[i], ZETA_S, e)[1]
         
         dA_temp, dB_temp = temp_slope(ZETA[i + 1], R_tilde2[i + 1], dR[i + 1], A_temp, B_temp, ZETA_S, e)
-        
         A[i+1] = A[i] + (DELTA/2)*(dA_slope  + dA_temp)
         B[i+1] = B[i] + (DELTA/2)*(dB_slope + dB_temp)
+        
     return A, B
+
+def secant_meth(x1, x2, fx1, fx2, tol):
+    '''
+    x1:(float) first initial guess 
+    x2:(float) second initial guess
+    fx1:(float) A end base of x1
+    fx2:(float) B end based of x2
+    tol:(float) tolerence for convergents
+    '''
+    meets_tol = False
+    if abs(fx1) < abs(fx2):
+        x1_new = x1
+    else: 
+        x1_new = x2
+        
+    x2_new = x2 - fx2*(x2 - x1)/(fx2 - fx1)
+    if abs(x2_new - x1_new) <= tol*(abs(x2_new) +abs(x1_new))/2:
+        meets_tol = True
+    return x1_new, x2_new, meets_tol
 
 def energy_and_mass(ZETA_S, e):
     E_m = 1 + (1/2)*ZETA_S*e
     M_m = (ZETA_S/2)**(1/4)
     return E_m, M_m
 
-def A_B_sphere_app(ZETA, ZETA_S):
-    zeta_0 = 0.5
+def A_B_initialize(ZETA, ZETA_S):
+    zeta_0 = 10
     A_new = np.zeros(N_max)
     B_new = np.zeros(N_max)
     g00 = np.ones(N_max)#initializes g00
@@ -184,7 +204,7 @@ def A_B_sphere_app(ZETA, ZETA_S):
         if zeta_0 >= ZETA[i]:
             A_new[i] = (0.5)*np.log((1/4)*(3*np.sqrt(1 - ZETA_S/(zeta_0)) - np.sqrt(1 - (ZETA_S*(ZETA[i])**2)/(zeta_0)**3))**2)
             B_new[i] = (-0.5)*np.log(1 - (ZETA_S*(ZETA[i])**2)/(zeta_0)**3)
-        else:
+        elif zeta_0 < ZETA[i]:
             A_new[i] = (0.5)*np.log(1 - ZETA_S/ZETA[i])
             B_new[i] = (-0.5)*np.log(1 - ZETA_S/ZETA[i])
     g00 = np.exp(2*A_new)
@@ -196,49 +216,64 @@ def A_B_sphere_app(ZETA, ZETA_S):
 
 def main():
     #zeta_s = [.01, .1, .2, 0.5] #how relativistic the function is
-    #zeta_s = [0.01, 0.1, 0.2, 0.3, 0.4]
-    zeta_s = [.01]
+    #zeta_s = [0.01, 0.1, 0.2, 0.5, 0.8]
+    zeta_s = [0.1]
     e_array = np.zeros_like(zeta_s)
     E_m = np.zeros_like(zeta_s)
     M_m = np.zeros_like(zeta_s)
-    
     for j, zetta_s_current in enumerate(zeta_s):
         values = []
         ZETA_S = zeta_s[j]
         #A, B, h_tilde = initialize_metric(0.5, ZETA_S)
-        A, B, h_tilde = A_B_sphere_app(ZETA, ZETA_S)
+        A, B, h_tilde = A_B_initialize(ZETA, ZETA_S)
         A_start = A[0]
         e = -1
-        AB_adjustment = 0
         A_B_sum = 1
-        while abs(A_B_sum) > 1e-9:
-            AB_adjustment += 1
-            for i in range(loops):
-                print(f"/n/n ----- in iter.nim. {i+1}, with {AB_adjustment} adjusments, zeta_s = {ZETA_S}")
-                prev_e = e
-                print("loops= ", i + 1," ZETA_S= ", ZETA_S)
-                C, D, F = KG_values(A, B, ZETA_S, h_tilde)
-                e, u_bar = KG_solver(C, D, F, A, B, ZETA_S)
-                R_tilde2, dR, u_tilde = gr_R_tildes(A, B, u_bar, h_tilde)
-                #A_end, B_end, mu_tilde = A_B_end(u_tilde, A, B, ZETA_S)
-                A, B = R_K(A, B, R_tilde2, dR, ZETA_S, u_tilde, e, A_start)
 
-                A_B_sum = A[N_max - 1] + B[N_max - 1]
-                print("A_B_sum= ", A_B_sum)
-                A_start -= A_B_sum
-                g00 = np.exp(2*A)
-                grr = np.exp(2*B)
-                h_tilde[0] = 0
-                h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
+        for i in range(loops):
+            prev_e = e
+            print("loops= ", i + 1," ZETA_S= ", ZETA_S)
+            C, D, F = KG_values(A, B, ZETA_S, h_tilde)
+            e, u_bar = KG_solver(C, D, F, A, B, ZETA_S)
+            meets_tol = False
+            A_start1 = -0.01
+            A_start2 = -1
+            AB_adjust = 0
+            tol = 1e-9
+            h_tilde_1 =h_tilde
+            h_tilde_2 =h_tilde
+            A_1 = A
+            A_2 = A
+            B_1 = B
+            B_2 = B
+            while meets_tol == False and AB_adjust < 50:
+                AB_adjust += 1
+                h_tilde_1[0] = 0
+                h_tilde_1 = ZETA*np.sqrt(np.sqrt(np.exp(2*A_1)/np.exp(2*B_1)))
+                R_tilde2_1, dR_1 = gr_R_tildes(A_1, B_1, u_bar, h_tilde_1)#h_tilde
+                A_1, B_1 = R_K(A, B, R_tilde2_1, dR_1, ZETA_S, e, A_start1)
+                fx1 = A_1[N_max - 1] + B_1[N_max - 1]
+                print("A1= ", A_1[0])
                 
-                if abs(e - prev_e) <= TOLERANCE:
-                    iter_to_tolerance = i + 1
-                    print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustments")
-                    x = 1
-                    break
+                h_tilde_2[0] = 0
+                h_tilde_2 = ZETA*np.sqrt(np.sqrt(np.exp(2*A_2)/np.exp(2*B_2)))
+                R_tilde2_2, dR_2 = gr_R_tildes(A_2, B_2, u_bar, h_tilde_2)#h_tilde
+                A_2, B_2 = R_K(A, B, R_tilde2_2, dR_2, ZETA_S, e, A_start2)
+                fx2 = A_2[N_max - 1] + B_2[N_max -  1]
+                print("A_2= ", A_2[0])
+                A_start1, A_start2, meets_tol = secant_meth(A_start1, A_start2, fx1, fx2, tol)
+                
+            A = A_1
+            B = B_1
+            A_start = A_start1
+            A_B_sum = A[N_max - 1] + B[N_max - 1]
+            print("A_B_sum= ", A_B_sum)
+            A_start -= A_B_sum
+            if abs(e - prev_e) <= TOLERANCE:
+                iter_to_tolerance = i + 1
+                print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustments")
+                break
         U_abs = abs(u_bar)
-        g00 = np.exp(2*A)
-        grr = np.exp(2*B)
         values.append(e)
         array = np.array(values)
         e_array[j] = array[len(array) - 1]
@@ -260,7 +295,6 @@ def main():
         plt.legend()
         plt.grid(True)
         plt.figure(2)
-        #plt.subplot(211)
         plt.plot(ZETA, A, label= 'A')
         plt.plot(ZETA, B, label= 'B')
         plt.legend()
@@ -268,30 +302,6 @@ def main():
         plt.xlim(0,30)
         plt.ylabel("arrays")
         plt.grid(True)
-        
-        '''
-        plt.figure(3)
-        plt.plot(ZETA, R_tilde2, label=zetta_s_current)
-        plt.xlabel("ZETA")
-        plt.xlim(0,30)
-        plt.ylabel("R_TILDE")
-        plt.legend()
-        plt.grid(True)
-        plt.figure(4)
-        plt.plot(ZETA, mu_tilde, label=zetta_s_current)
-        plt.xlabel("ZETA")
-        plt.xlim(0,60)
-        plt.ylabel("mu_tilde")
-        plt.legend()
-        plt.grid(True)
-        plt.figure(5)
-        plt.plot(ZETA, A_new, label=zetta_s_current)
-        plt.plot(ZETA, B_new, label=zetta_s_current)
-        plt.xlabel("ZETA")
-        plt.xlim(0,20)
-        plt.legend()
-        plt.ylabel("A_B_new")
-        plt.grid(True)'''
     plt.show()
 if __name__ == "__main__":
     main()
