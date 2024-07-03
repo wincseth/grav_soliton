@@ -215,9 +215,9 @@ def values_for_RK(A, B, R, dR, n, epsilon, ZETA_S, ZETA):
     if n == 0: #Sets it equal to 0 for the 0 term
         dA = 0
         dB = 0
-        return dA, dB
-    dA = (np.exp(2*B) - 1)/(2*ZETA[n]) - ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dA
-    dB = -(np.exp(2*B) - 1)/(2*ZETA[n]) + ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dB
+    else:
+        dA = (np.exp(2*B) - 1)/(2*ZETA[n]) - ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dA
+        dB = -(np.exp(2*B) - 1)/(2*ZETA[n]) + ((ZETA_S*ZETA[n])/4)*np.exp(2*B)*(R**2) + common #Calculates dB
     return dA, dB
 
 def Runge_Kutta(U_bar, epsilon, goo, grr, ZETA_S, ZETA, ZETA_MAX):
@@ -277,25 +277,58 @@ def Runge_Kutta_in_out(U_bar, epsilon, A, B, ZETA_S, ZETA, ZETA_MAX, a_start):
         A: 1D np array
         B: 1D np array
     """
+    A[0] = a_start
+    A_new = np.copy(A)
+    B_new = np.copy(B)
     N_max = len(ZETA)
     DEL = ZETA_MAX/N_max
-    goo, grr = back_metric(A, B) #Initializes metric
+    goo, grr = back_metric(A_new, B_new) #Initializes metric
     H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr)) #Calculates H_tilde for dR
     R_array=radial_func(U_bar, goo, grr, ZETA) #Calculates Radial function
     dR_array=der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX) #Calculates derivative of radial function
-    A[0] = a_start
     
-    for i in range(0, N_max-1, 1):
-        dA_val, dB_val=values_for_RK(A[i], B[i], R_array[i], dR_array[i], i, epsilon, ZETA_S, ZETA) #Calculates dA and dB values using our old A and B Vectors
-        A_temp=A[i] + DEL * dA_val #Finds temporary values
-        B_temp=B[i] + DEL * dB_val
+    for i in range(N_max-1):
+        dA_val, dB_val=values_for_RK(A_new[i], B_new[i], R_array[i], dR_array[i], i, epsilon, ZETA_S, ZETA) #Calculates dA and dB values using our old A and B Vectors
+        A_temp=A_new[i] + DEL * dA_val #Finds temporary values
+        B_temp=B_new[i] + DEL * dB_val
         dA_val2, dB_val2=values_for_RK(A_temp, B_temp, R_array[i+1], dR_array[i+1], i+1, epsilon, ZETA_S, ZETA) #Calculates dA and dB using our temporary values
-        A[i+1]=A[i] + (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
-        B[i+1]=B[i] + (DEL / 2) * (dB_val + dB_val2)
+        A_new[i+1]=A_new[i] + (DEL / 2) * (dA_val + dA_val2) #Sets next step to be the average between the two values
+        B_new[i+1]=B_new[i] + (DEL / 2) * (dB_val + dB_val2)
         
-    a_new = np.copy(A)
-    b_new = np.copy(B)
-    return a_new, b_new
+    
+    return A_new, B_new
+
+def gr_RK2(epsilon, U_bar, A, B, A_start, ZETA, ZETA_S, ZETA_MAX):
+    '''
+    Uses 2nd order Runge-Kutta ODE method to solve arrays
+    for A and B. Returns two numpy arrays, for A and B values respectively.
+    '''
+    A_array = A
+    B_array = B
+    A_array[0] = A_start
+    B_array[0] = 0
+    N_max = len(ZETA)
+    DEL = ZETA_MAX/N_max
+    goo, grr = back_metric(A_array, B_array)
+    H_tilde = ZETA*np.sqrt(np.sqrt(goo/grr))
+    Rt_array = radial_func(U_bar, goo, grr, ZETA)
+    dRt_array = der_of_R(U_bar, H_tilde, goo, grr, ZETA_MAX)
+    
+    for n in range(N_max-1):
+        A_n = A_array[n]
+        B_n = B_array[n]
+        Rt_n = Rt_array[n]
+        dRt_n = dRt_array[n]
+        slope_A_n, slope_B_n = values_for_RK(A_n, B_n, Rt_n, dRt_n, n, epsilon, ZETA_S, ZETA)
+        A_temp = A_n + DEL*slope_A_n
+        B_temp = B_n + DEL*slope_B_n
+        slope_A_temp, slope_B_temp = values_for_RK(A_temp, B_temp, Rt_array[n+1], dRt_array[n+1], n+1, epsilon, ZETA_S, ZETA)
+        
+        # RK2 method
+        A_array[n+1] = A_n + (DEL/2)*(slope_A_n + slope_A_temp)
+        B_array[n+1] = B_n + (DEL/2)*(slope_B_n + slope_B_temp)
+    
+    return A_array, B_array
 
 def gr_initialize_metric(ZETA_S, ZETA):
     
@@ -321,25 +354,50 @@ def gr_initialize_metric(ZETA_S, ZETA):
 
     return g_00_array, g_rr_array, h_tilde
     
+def find_fixed_metric(zeta_0, zeta_s, ZETA):
+    N_MAX = len(ZETA)
+    
+    g_00 = np.ones(N_MAX)
+    g_rr = np.ones(N_MAX)
+    outside_idx = ZETA >= zeta_0
+    inside_idx = ZETA < zeta_0
+    #print(f"inside={inside_idx}\noutside={outside_idx}")
+    def metric_f(zeta_array):
+        return 1 - zeta_s*(zeta_array**2)/(zeta_0**3)
+    
+    g_00[inside_idx] = (1/4)*(3*np.sqrt(metric_f(zeta_0)) - np.sqrt(metric_f(ZETA[inside_idx])))**2
+    g_00[outside_idx] = 1 - zeta_s/(ZETA[outside_idx])
+    g_rr[outside_idx] = 1/g_00[outside_idx]
+    g_rr[inside_idx] = 1/metric_f(ZETA[inside_idx])
+    
+    h_tilde = ZETA*np.sqrt(np.sqrt(g_00/g_rr))
 
-def secant_root_alg(x_n, addin, x_n_bef, addin_bef):
-    
+    A_out = np.log(g_00)/2
+    B_out = np.log(g_rr)/2
+    return A_out, B_out, h_tilde
+
+def find_AB_root(x1, x2, fx1, fx2):
     '''
-    algorithm to solve for the zeros using the secant root algorithm
-    
-    Parameters:
-        x_n: np scalar
-        x_n_bef: np scalar
-        addin: np scalar
-        addin_bef: np scalar
-    Outputs:
-        zero_cand: np scalar
+    Uses secant method to find a new guess for x, to be used
+    with RK2 in finding an initial condition for A.
+
+    params:
+    x1: (float) first initial A guess
+    x2: (float) second initial A guess
+    fx1: (float) A end based off of x1
+    fx2: (float) B end based off of x2
+
+    returns:
+    x1_new: (float) either x1 or x2, whichever has smaller abs(f)
+    x2_new: (float) zero intercept and new guess
+    meets_tol: (bool) whether or not tolerance is met
     '''
-    if abs(addin_bef) < abs(addin):
-        x1_new = x_n_bef
+    if abs(fx1) < abs(fx2):
+        x1_new = x1
     else:
-        x1_new = x_n
+        x1_new = x2
     
-    x2_new = x_n - addin*(x_n - x_n_bef)/(addin - addin_bef)
+    x2_new = x2 - fx2*(x2 - x1)/(fx2 - fx1)
+    #print("Sums: ",fx1, fx2)
     
     return x1_new, x2_new
