@@ -2,24 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 2000 # number of zeta intervals, length of the n arrays - 1
-ZETA_S_VALS = [0.01, 0.1, 0.2, 0.5, 1]
-ZETA_MAX = 100
-DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1)
-ZETA_VALS = np.arange(0, ZETA_MAX, DELTA)
-N_MAX = len(ZETA_VALS)
-MAX_ITERATIONS = 40 # how many times to run through the equations
-TOLERANCE = 1.0e-6 #level of accuracy for epsilon convergence
+NUM_ZETA_INTERVALS = 1000 # number of zeta intervals, length of the zeta array - 1
+ZETA_S_VALS = [0.5] # which values of zeta_s to calculate
+ZETA_MAX = 50 # how far to do zeta calculations out to
+DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1) # step size for zeta
+ZETA_VALS = np.arange(0, ZETA_MAX, DELTA) # np array for zeta values
+N_MAX = len(ZETA_VALS) # length of zeta array
+MAX_ITERATIONS = 40 # hard cap on how many times to run through the equations
+TOLERANCE = 1.0e-6 # level of accuracy for epsilon convergence
 
+# Physical constants
 G_GRAV = 6.7e-39
 M_MASS = 8.2e10
 A_BOHR = 1/(G_GRAV*M_MASS**3)
 
 PLOT_PARAMS = {
-    'u_bar': False,
+    'u_bar': True,
     'h_tilde': False,
-    'AB': False,
-    'mu_tilde': True
+    'AB': True,
+    'mu_tilde': False
 }
 
 # Klein Gordon equation solver ----------------------------------------------------
