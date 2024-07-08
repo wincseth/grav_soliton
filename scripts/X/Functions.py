@@ -401,3 +401,47 @@ def find_AB_root(x1, x2, fx1, fx2):
     #print("Sums: ",fx1, fx2)
     
     return x1_new, x2_new
+
+def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, prev_g2, zeta_0):
+    
+    
+    
+    N_max = len(ZETA)
+    error2 = 1
+    while error2 > 10**-6:
+        goo, grr = back_metric(a_array, b_array)
+        U_bar, epsilon = finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX)
+        error = 1
+        guess_1 = prev_g1
+        guess_2 = prev_g2
+        A_array1 = np.copy(a_array)
+        B_array1 = np.copy(b_array) 
+        A_array2 = np.copy(a_array)
+        B_array2 = np.copy(b_array)
+        rounds = 0
+        while error > 10**-6:
+            rounds += 1
+            prev_g1 = guess_1
+            prev_g2 = guess_2
+            A_array1, B_array1 = gr_RK2(epsilon, U_bar, A_array1, B_array1, guess_1, ZETA, ZETA_S, ZETA_MAX)
+            fx1 = A_array1[N_max-1] + B_array1[N_max-1]
+            A_array2, B_array2 = gr_RK2(epsilon, U_bar, A_array2, B_array2, guess_2, ZETA, ZETA_S, ZETA_MAX)
+            fx2 = A_array2[N_max-1] + B_array2[N_max-1]
+            guess_1, guess_2 = find_AB_root(guess_1, guess_2, fx1, fx2)
+            error = abs(A_array2[N_max-1] + B_array2[N_max-1])
+            if np.isnan(guess_1) or np.isnan(guess_2):
+                if np.isnan(guess_1):
+                    guess_1 = prev_g1
+                if np.isnan(guess_2):
+                    guess_2 = prev_g2
+        prev_a0 = a_array[0]
+        a_array = A_array2
+        schwartz_a = np.zeros_like(ZETA)
+        index = ZETA > zeta_0
+        schwartz_a[index] = np.log(1-(ZETA_S/ZETA[index]))/2
+        b_array = B_array2
+        print("Rounds: ", rounds, "Current A[0]: ", a_array[0])
+        print("Epsilon: ", epsilon, " for ZETA_S = ", ZETA_S)
+        error2 = abs(prev_a0 - a_array[0])
+        
+    return U_bar, epsilon, a_array, b_array
