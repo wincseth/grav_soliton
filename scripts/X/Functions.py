@@ -405,11 +405,13 @@ def find_AB_root(x1, x2, fx1, fx2):
 def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, prev_g2, zeta_0):
     
     
-    
+    Rounds = 0
     N_max = len(ZETA)
     error2 = 1
     while error2 > 10**-6:
+        Rounds += 1
         goo, grr = back_metric(a_array, b_array)
+        
         U_bar, epsilon = finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX)
         error = 1
         guess_1 = prev_g1
@@ -434,6 +436,9 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
                     guess_1 = prev_g1
                 if np.isnan(guess_2):
                     guess_2 = prev_g2
+        if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):
+            print("ERRoR ERROR")
+            return U_bar, epsilon, a_array, b_array, Rounds, False
         prev_a0 = a_array[0]
         a_array = A_array2
         schwartz_a = np.zeros_like(ZETA)
@@ -444,4 +449,4 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
         print("Epsilon: ", epsilon, " for ZETA_S = ", ZETA_S)
         error2 = abs(prev_a0 - a_array[0])
         
-    return U_bar, epsilon, a_array, b_array
+    return U_bar, epsilon, a_array, b_array, Rounds, True
