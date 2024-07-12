@@ -1,0 +1,241 @@
+Params and results from first_version.py
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 250
+Delta: 0.099601593625498
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.16348315297631422
+    A_0: -0.0015861301321907074
+    E/m: 0.9991825842351184
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 500
+Delta: 0.0499001996007984
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.16342032223267222
+    A_0: -0.0015856113164087358
+    E/m: 0.9991828983888367
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 1000
+Delta: 0.024975024975024976
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.16340456103440665
+    A_0: -0.0015854811599750889
+    E/m: 0.999182977194828
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 500
+Delta: 0.0499001996007984
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.7
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.2783903084065825
+    A_0: -0.22243470848198316
+    E/m: 0.9025633920576961
+    Iterations: 35
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 500
+Delta: 0.0499001996007984
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.7428
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.3337675512232172
+    A_0: -0.29985397152065807
+    E/m: 0.8760387314756971
+    Iterations: 35
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 1500
+Delta: 0.016655562958027982
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.1634016365666643
+    A_0: -0.00158545700803535
+    E/m: 0.9991829918171666
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2000
+Delta: 0.01249375312343828
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.1634006121369339
+    A_0: -0.001585448547245698
+    E/m: 0.9991829969393153
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.163400137722691
+    A_0: -0.0015854446288512695
+    E/m: 0.9991829993113865
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 3000
+Delta: 0.008330556481172943
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-10
+    |
+    RESULTS:
+    Epsilon: -0.16339987991197813
+    A_0: -0.0015854424994273045
+    E/m: 0.9991830006004401
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 3500
+Delta: 0.007140816909454442
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.01
+Write date: 2024-07-11
+    |
+    RESULTS:
+    Epsilon: -0.16339972442143452
+    A_0: -0.0015854412150797179
+    E/m: 0.9991830013778928
+    Iterations: 25
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.05
+Write date: 2024-07-11
+    |
+    RESULTS:
+    Epsilon: -0.16601363577258405
+    A_0: -0.008092369992279837
+    E/m: 0.9958496591056853
+    Iterations: 24
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.05
+Write date: 2024-07-11
+    |
+    RESULTS:
+    Epsilon: -0.16601363577258405
+    A_0: -0.008092369992279837
+    E/m: 0.9958496591056853
+    Iterations: 24
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.5
+Write date: 2024-07-11
+    |
+    RESULTS:
+    Epsilon: -0.21383126567345861
+    A_0: -0.11251779455669644
+    E/m: 0.9465421835816353
+    Iterations: 29
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.5
+Write date: 2024-07-12
+    |
+    RESULTS:
+    Epsilon: -0.21383126567345861
+    A_0: -0.11251779455669644
+    E/m: 0.9465421835816353
+    Iterations: 29
+
+
+-----------------------------------------
+PARAMS:
+Max zeta: 25
+Zeta intervals: 2500
+Delta: 0.009996001599360257
+Epsilon convergence tolerance: 1e-06
+Zeta_s: 0.7
+Write date: 2024-07-12
+    |
+    RESULTS:
+    Epsilon: -0.27806803806566804
+    A_0: -0.2221204275842063
+    E/m: 0.9026761866770162
+    Iterations: 35
+
