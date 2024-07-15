@@ -13,9 +13,9 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User input
-n = 1500  # Interval Steps
+n = 2000  # Interval Steps
 ZETA_MAX = 20
-ZETA_Sn = np.linspace(0.1, 0.7, 7)
+ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------
 # Global variables afterwards

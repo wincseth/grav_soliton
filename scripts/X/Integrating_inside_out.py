@@ -14,7 +14,7 @@ from Functions import integrating_inside_out as integral
 # User input
 n = 500  # Interval Steps
 ZETA_MAX = 20
-ZETA_Sn = [0.7425, 0.7433]
+ZETA_Sn = [0.7423, 0.7433]
 df1 = pd.read_csv(f'n_{n}_max_{ZETA_MAX}.csv')
 # -----------------------------------------------------------------------
 # Global variables afterwards
@@ -29,7 +29,7 @@ a = 1 / (G*M**3)  # gravitational bohr radius
 R_S = 2*G*M  # schwarzschild radius
 
 #Main Function---------------------------------------------------------
-#ZETA_MAX = 20, n = 500 ZETA_S = 0.742437, n = 1000 ZETA_S = 0.742712, n = 1500 ZETA_S = 0.742761
+#ZETA_MAX = 20, n = 500 ZETA_S = 0.742431, n = 1000 ZETA_S = 0.742712, n = 1500 ZETA_S = 0.742761
 def main():
     works = True
     prev_g1 = -0.1
