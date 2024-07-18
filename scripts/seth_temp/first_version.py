@@ -4,14 +4,14 @@ import os, glob
 import matplotlib.pyplot as plt
 
 # GLOBAL PARAMETERS:
-NUM_ZETA_INTERVALS = 3000 # number of zeta intervals, length of zeta array - 1
-ZETA_S_VALS = np.array([0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]) # which values of zeta_s to calculate
+NUM_ZETA_INTERVALS = 1500 # number of zeta intervals, length of zeta array - 1
+ZETA_S_VALS = np.array([0.1, 0.2, 0.5, 0.7, 0.74, 0.742]) # which values of zeta_s to calculate
 ZETA_S_START = 0 # keep at 0 to use whole array, nonzero to try to read from preexisting file
-ZETA_MAX = 25 # how far to calculate zeta to
+ZETA_MAX = 20 # how far to calculate zeta to
 DELTA = ZETA_MAX/(NUM_ZETA_INTERVALS + 1) # zeta array step size
 ZETA_VALS = np.arange(0, ZETA_MAX, DELTA) # zeta array
 N_MAX = len(ZETA_VALS)
-MAX_ITERATIONS = 40 # hard cap on how many times to run through the equations
+MAX_ITERATIONS = 400 # hard cap on how many times to run through the equations
 TOLERANCE = 1.0e-6 #level of accuracy for epsilon convergence
 
 # physical parameters
@@ -315,10 +315,13 @@ def find_AB_root(x1, x2, fx1, fx2, tol):
         meets_tol = True
     return x1_new, x2_new, meets_tol
 
-def data_out(save_text, data, input_name, zeta_s, eps, A_0, num_iter, u_bar, A, B):
-    
-    # write and save text file----------------------
+def data_out(save_text, data, input_name, zeta_s_idx):
+    zeta_s = ZETA_S_VALS[zeta_s_idx]
+    eps = data['epsilon'][zeta_s_idx]
     current_date = datetime.now().strftime("%Y-%m-%d")
+
+    # (1) write and save text file----------------------
+    '''
     global_params = f"""Data outputs for ultrarelativistic Klein Gordon/Metric solver
     
 Max zeta: {ZETA_MAX}
@@ -335,8 +338,9 @@ Write date: {current_date}
     if save_text:
         file_data = np.column_stack((ZETA_S_VALS, data['epsilon'], data['A_start'], data['E/m']))
         np.savetxt(file_name, file_data, header=file_header, comments="", fmt='%.4f   %.4f   %.4f   %.4f')
-    
-    #TEMP (math) ---------------------------
+    '''
+    # (2) TEMP (math) ---------------------------
+    """
     temp_params = f''' Math terms in metric/KG solver
 
 Max zeta: {ZETA_MAX}
@@ -349,9 +353,9 @@ C1          C2          C3          DF          da_t1        da_t2       da_t3  
 '''
     temp_data = np.column_stack((MATH_DATA['C1'], MATH_DATA['C2'], MATH_DATA['C3'], MATH_DATA['DF'], MATH_DATA['da_t1'], MATH_DATA['da_t2'], MATH_DATA['da_t3'], MATH_DATA['da_t4']))
     # write formula nums or not
-    #np.savetxt('temp_math_out.75.txt', temp_data, header=temp_params, comments="", fmt='%.4e   %.4e   %.4e   %.4e   %.4e   %.4e   %.4e   %.4e')
-
-    # log results in text file ------------------------------
+    np.savetxt('temp_math_out.75.txt', temp_data, header=temp_params, comments="", fmt='%.4e   %.4e   %.4e   %.4e   %.4e   %.4e   %.4e   %.4e')
+    """
+    # (3) log results in text file ------------------------------
     log_file_name = "results_log.txt"
     log_data = f'''
 -----------------------------------------
@@ -365,12 +369,10 @@ Write date: {current_date}
     |
     RESULTS:
     Epsilon: {eps}
-    A_0: {A_0}
+    A_0: {data['A_start']}
     E/m: {1 + (1/2)*zeta_s*eps}
-    Iterations: {num_iter}
-
+    Iterations: {data['num_iter']}
 '''
-    #print(log_data)
 
     if not os.path.isfile(log_file_name):
         with open(log_file_name, 'w') as f:
@@ -382,7 +384,7 @@ Write date: {current_date}
             file.write(log_data)
             print('appending to file')
 
-    # Save u bars -------------------------------
+    # (4) Save u bars -------------------------------
     u_file_header = f'''
 U bar array from {__file__}
 
@@ -390,17 +392,17 @@ Max zeta: {ZETA_MAX}
 Zeta intervals: {NUM_ZETA_INTERVALS}
 Delta: {DELTA}
 Epsilon convergence tolerance: {TOLERANCE}
-Epsilon: {eps}
-Zeta_s: {zeta_s}
+Specific zeta_s: {zeta_s}
 Zeta_s_array: {ZETA_S_VALS}
+Epsilon array: {data['epsilon']}
 
 u_bar,  A,  B
     '''
     u_file_name = f"ubar_zs_{zeta_s}_{len(ZETA_S_VALS)}_z_{ZETA_MAX}_{NUM_ZETA_INTERVALS}.txt"
-    u_file_data = np.column_stack((u_bar, A, B))
+    u_file_data = np.column_stack((data['u_bar'], data['A_values'], data['B_values']))
     np.savetxt(u_file_name, u_file_data, header=u_file_header)
 
-    # create and show plots ------------------------
+    # (5) create and show plots ------------------------
     fig_idx = 1
     for key, plot_val in SAVE_PARAMS.items():
         if plot_val:
@@ -443,6 +445,7 @@ def main():
         'R_tilde': np.zeros(N_MAX),
         'epsilon': np.zeros(len(ZETA_S_VALS)),
         'A_start': np.zeros(len(ZETA_S_VALS)),
+        'num_iter': 0,
         'E/m': np.zeros(len(ZETA_S_VALS))
     }
 
@@ -450,7 +453,7 @@ def main():
     zeta_s_vals = ZETA_S_VALS[ZETA_S_VALS >= ZETA_S_START]
     print(f"new zeta_s values: {zeta_s_vals}")
     if ZETA_S_START != 0:
-        match_start_data_file = glob.glob(f"ubar_zs_{ZETA_S_START}_*.txt")
+        match_start_data_file = glob.glob(f"ubar_zs_{ZETA_S_START}_*_z_{ZETA_MAX}_{NUM_ZETA_INTERVALS}.txt")
         if not match_start_data_file:
             print(f"No matching files to take data from zeta_s={ZETA_S_START}, using original array...")
         else:
@@ -461,9 +464,9 @@ def main():
     for j, zeta_s in enumerate(zeta_s_vals):
         # initialize A and B if not already initialized above
         if j == 0 and ZETA_S_START == 0:
-            #A_array, B_array, h_tilde = find_fixed_metric(15, zeta_s)
-            A_array = np.zeros(N_MAX)
-            B_array = np.zeros(N_MAX)
+            A_array, B_array, h_tilde = find_fixed_metric(10, zeta_s)
+            #A_array = np.zeros(N_MAX)
+            #B_array = np.zeros(N_MAX)
 
         h_tilde = ZETA_VALS*np.sqrt(np.sqrt(np.exp(2*A_array)/np.exp(2*B_array)))
         A_start = A_array[0]
@@ -487,7 +490,7 @@ def main():
             B_array1 = B_array
             A_array2 = A_array
             B_array2 = B_array
-            while meets_tol == False and AB_adjustments < 50:
+            while meets_tol == False:
                 AB_adjustments+=1
                 
                 # do RK for two different A_0's
@@ -542,7 +545,7 @@ def main():
         data['epsilon'][j] = epsilon
         data['A_start'][j] = A_start
         data['E/m'][j] = 1 + (1/2)*zeta_s*epsilon
-
+        data['num_iter'] = iter_to_tolerance
         '''
         plt.figure(1)
         plt.plot(ZETA_VALS, np.abs(u_bar_array), alpha=0.5, marker='.', label=f"u_bar, $\zeta_s$={zeta_s} , A_end+B_end={AB_sum}")
@@ -568,7 +571,7 @@ def main():
         plt.grid(True)
         '''
 
-    _ = data_out(SAVE_PARAMS['write_file'], data, SAVE_PARAMS['custom_name'], ZETA_S_VALS[len(ZETA_S_VALS)-1], epsilon, A_start, iter_to_tolerance, u_bar_array, A_array, B_array)
+    _ = data_out(SAVE_PARAMS['write_file'], data, SAVE_PARAMS['custom_name'], len(ZETA_S_VALS)-1)
     '''
     A_schw, B_schw, h_tilde_schw = find_fixed_metric(10, 0.5)
     print(f"A_schw end: {A_schw[N_MAX-1]}, B_schw end: {B_schw[N_MAX-1]}")
@@ -577,6 +580,6 @@ def main():
     plt.plot(ZETA_VALS, B_schw, color='black', alpha=0.5, linestyle='-', label="B schw")
     '''
     plt.title(f"$\zeta_s$={zeta_s}, $\epsilon$={epsilon}\nIter: {iter_to_tolerance}, Tol: {TOLERANCE}\nZ_max={ZETA_MAX}, Z_int={NUM_ZETA_INTERVALS}")
-    #plt.show()
+    plt.show()
 
 _ = main()
