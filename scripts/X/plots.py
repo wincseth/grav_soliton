@@ -35,7 +35,7 @@ def main():
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
         plt.plot(ZETA, df_ZETA[f'U Bar of {important_S[i]}'], color = colors[i], label = f'ZETA_S of {important_S[i]}')
-    plt.xlim((0, 22))
+    plt.xlim((0, 20))
     plt.xlabel('$\zeta$')
     plt.ylabel('U Bar')
     plt.title(f'U_bars_{name}')
@@ -46,7 +46,7 @@ def main():
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
         plt.plot(ZETA, np.exp(2*df_ZETA[f'A of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
-    plt.xlim((0, 40))
+    plt.xlim((0, 20))
     plt.xlabel('$\zeta$')
     plt.ylabel('g00')
     plt.title(f'g00_{name}')
@@ -56,7 +56,7 @@ def main():
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
         plt.plot(ZETA, np.exp(2*df_ZETA[f'B of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
-    plt.xlim((0, 40))
+    plt.xlim((0, 20))
     plt.xlabel('$\zeta$')
     plt.ylabel('grr')
     plt.title(f'grr_{name}')
@@ -65,9 +65,9 @@ def main():
     
     #Epsilons and their limits
     plt.figure(figsize=(9,9))
-    plt.plot(ZETA_Sn, df_ZETA_S['Epsilons'])
+    plt.plot(ZETA_Sn, 1/df_ZETA_S['Epsilons'])
     plt.xlabel('$\zeta_s$')
-    plt.ylabel('Epsilon')
+    plt.ylabel('1/Epsilon')
     plt.title(f'Epsilons_vs_ZETA_S_{name2}')
     plt.savefig(f'images/Epsilons_vs_ZETA_S_{name2}.png')
     

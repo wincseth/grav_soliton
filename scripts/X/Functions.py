@@ -417,7 +417,7 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
         guess_1 = prev_g1
         guess_2 = prev_g2
         A_array1 = np.copy(a_array)
-        B_array1 = np.copy(b_array) 
+        B_array1 = np.copy(b_array)
         A_array2 = np.copy(a_array)
         B_array2 = np.copy(b_array)
         rounds = 0
@@ -434,6 +434,7 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
             if np.isnan(guess_1) or np.isnan(guess_2):
                 if np.isnan(guess_1):
                     guess_1 = prev_g1
+                    print("sum sum sum")
                 if np.isnan(guess_2):
                     guess_2 = prev_g2
         if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):

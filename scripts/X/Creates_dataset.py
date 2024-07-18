@@ -13,9 +13,10 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User input
-n = 2000  # Interval Steps
+n = 1000  # Interval Steps
 ZETA_MAX = 20
-ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
+a1 = np.linspace(0.73, 0.7427, 20)
+ZETA_Sn = a1
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------
 # Global variables afterwards
@@ -37,10 +38,10 @@ def main():
     En_ov_M = []
     prev_g1 = -0.1
     prev_g2 = -1
+    ZETA_S = ZETA_Sn[0]
+    a_array, b_array, h_tilde = find_fixed_metric(zeta_0, ZETA_S, ZETA)
     for i in range(len(ZETA_Sn)):
         ZETA_S = ZETA_Sn[i]
-        if i == 0:
-            a_array, b_array, h_tilde = find_fixed_metric(zeta_0, ZETA_S, ZETA)
         U_bar, epsilon, a_array, b_array, Rounds, works = integral(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, prev_g2, zeta_0)
             
         epsilons.append(epsilon)
