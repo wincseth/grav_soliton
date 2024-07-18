@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 #global variables-----------------------------------------------------------------
 
 #users input for the code
-n = 2000 #interval step
+n = 1000 #interval step
 ZETA_MAX = 25 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
 loops = 300 #number of loops the program will iterate through
@@ -19,7 +19,7 @@ M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2e10 #if a equals the atomic Bohr radius
 a = 1 /(G*M**3)#gravitational bohr radius
 R_S = 2*G*M #schwarzschild radius
-TOLERANCE = 1.0e-6
+TOLERANCE = 1.0e-8
 
 #functions------------------------------------------------------------------------
 
@@ -165,10 +165,10 @@ def A_B_initialize(ZETA, ZETA_S):
         elif zeta_0 < ZETA[i]:
             A_new[i] = (0.5)*np.log(1 - ZETA_S/ZETA[i])
             B_new[i] = (-0.5)*np.log(1 - ZETA_S/ZETA[i])
-    g00 = np.exp(2*A_new)
-    grr = np.exp(2*B_new)
-    h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
-    return A_new, B_new, h_tilde
+    #g00 = np.exp(2*A_new)
+    #grr = np.exp(2*B_new)
+    #h_tilde = ZETA*np.sqrt(np.sqrt(g00/grr))
+    return A_new, B_new
 
 
 
@@ -187,9 +187,10 @@ def main():
         ZETA_S = zeta_s[j]
         #A, B, h_tilde = initialize_metric(0.5, ZETA_S)
         if j == 0:
-            A, B, h_tilde = A_B_initialize(ZETA, ZETA_S)
+            A, B = A_B_initialize(ZETA, ZETA_S)
             A = np.zeros(N_max)
             B = np.zeros(N_max)
+            h_tilde = ZETA*np.sqrt(np.sqrt(np.exp(2*A)/np.exp(2*B)))
             A_start = A[0]
             e = -1
             A_B_sum = 1
@@ -206,9 +207,9 @@ def main():
             A_start1 = A_start + 0.05
             A_start2 = A_start - 0.05
             AB_adjust = 0
-            tol = 1e-6
-            h_tilde_1 =h_tilde
-            h_tilde_2 =h_tilde
+            tol = 1e-8
+            h_tilde_1 =np.copy(h_tilde)
+            h_tilde_2 =np.copy(h_tilde)
             A_1 = np.copy(A)
             A_2 = np.copy(A)
             B_1 = np.copy(B)
@@ -230,16 +231,18 @@ def main():
                 
             A = np.copy(A_2)
             B = np.copy(B_2)
-            A_end = np.copy(A)
-            B_end = np.copy(B)
+            A_end = np.copy(A_2)
+            B_end = np.copy(B_2)
             A_start = A_start2
             A_0[j]=A_start
-            A_B_sum = A[N_max - 1] + B[N_max - 1]
-            A_start -= A_B_sum
+            #A_B_sum = A[N_max - 1] + B[N_max - 1]
+
             if abs(e - prev_e) <= TOLERANCE:
                 iter_to_tolerance = i + 1
                 print(f"Tolerance met! Took {iter_to_tolerance} iteration(s) for this adjustments")
                 break
+            h_tilde[0] = 0
+            h_tilde = ZETA*np.sqrt(np.sqrt(np.exp(2*A)/np.exp(2*B)))
         U_abs = abs(u_bar)
         values.append(e)
         array = np.array(values)
