@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 #users input for the code
 n = 1000 #interval step
-ZETA_MAX = 25 #maximum zeta value
+ZETA_MAX = 20 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
 loops = 300 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
@@ -69,6 +69,7 @@ def KG_solver(C, D, F, A, B, ZETA_S):
     u_tilde[0] = 0
     u_tilde[N_max - 1] = 0
     norm = np.sum(grr*u_tilde**2/np.sqrt(g00)) #normalizes u_bar
+    #print("norm= ",norm)
     u_tilde /= np.sqrt(norm*DELTA)#this takes u_bar and normalizes it to give us a new value of u_bar
     u_bar_new = np.sqrt(grr/g00)*u_tilde
     return epsilon, u_bar_new
@@ -175,13 +176,15 @@ def A_B_initialize(ZETA, ZETA_S):
 #Main Function-------------------------------------------------------
 
 def main():
-    #zeta_s = [.01, .1, 0.2, 0.5] #how relativistic the function is
-    zeta_s = [0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.71, 0.715, 0.72, 0.725, 0.73,0.735,0.74]
+    zeta_s = [.01, .1, 0.2,0.3,0.4, 0.5, 0.6, 0.7, 0.71, 0.72, 0.725, 0.73, 0.74, 0.741, 0.742, 0.743, 0.744, 0.745, 0.746, 0.747] #how relativistic the function is
+    #zeta_s = [0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.71, 0.715, 0.72, 0.725, 0.73,0.735,0.74]
     #zeta_s = [0.01, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.525, 0.55, 0.575, 0.6, 0.625, 0.65,0.675, 0.7, 0.701, 0.705, 0.71,0.715, 0.72, 0.725,0.73,0.735,0.74]
     e_array = np.zeros_like(zeta_s)
     E_m = np.zeros_like(zeta_s)
     M_m = np.zeros_like(zeta_s)
     A_0 = np.zeros_like(zeta_s)
+    R_tilde2_vals = np.zeros_like(zeta_s)
+    print("R_tilde_vals= ", R_tilde2_vals)
     for j, zeta_s_current in enumerate(zeta_s):
         values = []
         ZETA_S = zeta_s[j]
@@ -203,9 +206,10 @@ def main():
             print("loops= ", i + 1," ZETA_S= ", ZETA_S)
             C, D, F = KG_values(A, B, ZETA_S, h_tilde)
             e, u_bar = KG_solver(C, D, F, A, B, ZETA_S)
+            print("Epsilon = ",e)
             meets_tol = False
-            A_start1 = A_start + 0.05
-            A_start2 = A_start - 0.05
+            A_start1 = A_start + 0.1
+            A_start2 = A_start - 0.1
             AB_adjust = 0
             tol = 1e-8
             h_tilde_1 =np.copy(h_tilde)
@@ -216,13 +220,13 @@ def main():
             B_2 = np.copy(B)
             while meets_tol == False and AB_adjust < 100:
                 AB_adjust += 1
-                h_tilde_1[0] = 0
+                #h_tilde_1[0] = 0
                 h_tilde_1 = ZETA*np.sqrt(np.sqrt(np.exp(2*A_1)/np.exp(2*B_1)))
                 R_tilde2_1, dR_1 = gr_R_tildes(A_1, B_1, u_bar, h_tilde_1)#h_tilde
                 A_1, B_1 = R_K(A, B, R_tilde2_1, dR_1, ZETA_S, e, A_start1)
                 fx1 = A_1[N_max - 1] + B_1[N_max - 1]
                 
-                h_tilde_2[0] = 0
+                #h_tilde_2[0] = 0
                 h_tilde_2 = ZETA*np.sqrt(np.sqrt(np.exp(2*A_2)/np.exp(2*B_2)))
                 R_tilde2_2, dR_2 = gr_R_tildes(A_2, B_2, u_bar, h_tilde_2)#h_tilde
                 A_2, B_2 = R_K(A, B, R_tilde2_2, dR_2, ZETA_S, e, A_start2)
@@ -243,9 +247,12 @@ def main():
                 break
             h_tilde[0] = 0
             h_tilde = ZETA*np.sqrt(np.sqrt(np.exp(2*A)/np.exp(2*B)))
+        #print("R_tilde2_2= ", R_tilde2_2)
+        #R_tilde2_vals[j] = R_tilde2_2
         U_abs = abs(u_bar)
         values.append(e)
         array = np.array(values)
+        
         e_array[j] = array[len(array) - 1]
         E_m[j], M_m[j] = energy_and_mass(ZETA_S, e_array[j])
         x = A[28] + B[28]
@@ -295,6 +302,11 @@ def main():
     #plt.legend()
     plt.grid(True)
     plt.show()
+    plt.figure(6)
+    plt.plot(zeta_s, R_tilde2_2, alpha = 0.5, marker = ".")
+    plt.xlabel("Zeta")
+    plt.ylabel("R_tilde2")
+    plt.show
     #print("ZETA_S","Epsilon array","E/M","M/Mpl","epsilon")
     #print(np.vstack(zeta_s),np.vstack(e_array),np.vstack(E_m),np.vstack(M_m),np.vstack(array))
     
