@@ -69,11 +69,11 @@ def main():
                               'A_0' : A_0s,
                               'E/M' : En_ov_M}, index = ZETA_Sn,)
     print("--- Dataset generation conplete ---\n")
-    name = input("Enter name for CSV holding u bar, A, B, R tilde: \n")
-    name2 = input("Enter name for CSV holding epsilon, A0, E/M: \n")
+    name = input("Enter name for CSV holding u bar, A, B, R tilde (no .csv): \n")
+    name2 = input("Enter name for CSV holding epsilon, A0, E/M (no .csv): \n")
     
-    df1.to_csv(name)
-    df2.to_csv(name2)
+    df1.to_csv(f"data/csv_files/{name}.csv")
+    df2.to_csv(f"data/csv_files/{name2}.csv")
     
     
 

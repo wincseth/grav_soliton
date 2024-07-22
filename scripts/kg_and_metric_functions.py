@@ -140,15 +140,15 @@ def kg_solver(g00, grr, zeta_s, zeta_vals, zeta_max):
 
     return u_bar, epsilon
 
-def metric_find_R_tilde(U, g00, grr, zeta_vals):
+def metric_find_R_tilde(U, A, B, zeta_vals):
     """
     Defining the rescaled radial function, to be used in the general
     relativistic differential equations to redefine the metric.
 
     Parameters:
         U: 1D np array
-        g00: 1D np array
-        grr: 1D np array
+        A: 1D np array
+        B: 1D np array
         zeta_vals: 1D np array
     Outputs:
         R: 1D np array
@@ -156,10 +156,10 @@ def metric_find_R_tilde(U, g00, grr, zeta_vals):
 
     R = np.zeros_like(U) #Initialize zero vector
     use = np.where(zeta_vals != 0) #Finds all indeces of zeta_vals where zeta_vals isn't 0
-    R[use] = np.sqrt(np.sqrt(g00[use]/grr[use])) * U[use] / (zeta_vals[use]) #Calculates R
+    R[use] = np.sqrt(np.sqrt(np.exp(2*A[use] - 2*B[use]))) * U[use] / (zeta_vals[use]) #Calculates R
     return R
 
-def metric_find_dR_tilde(u_bar, H_tilde, g00, grr, zeta_max):
+def metric_find_dR_tilde(u_bar, H_tilde, A, B, zeta_max):
     """
     Derivative of R tilde function, to be used in the general
     relativistic differential equations to redefine the metric. 
@@ -167,8 +167,8 @@ def metric_find_dR_tilde(u_bar, H_tilde, g00, grr, zeta_max):
     Parameters:
         u_bar: 1D np array
         H_tilde: 1D np array
-        g00: 1D np array
-        grr: 1D np array
+        A: 1D np array
+        B: 1D np array
         zeta_max: np scalar
     Outputs:
         dR: 1D np array
@@ -177,7 +177,7 @@ def metric_find_dR_tilde(u_bar, H_tilde, g00, grr, zeta_max):
     DEL = zeta_max/N_max
     
     dR = np.zeros_like(u_bar) #Initializes another zero vector
-    U_tilde = np.sqrt(g00/grr)*u_bar #Calculates U_tilde
+    U_tilde = np.sqrt(np.exp(2*A - 2*B))*u_bar #Calculates U_tilde
     for i in range(len(dR)):
         if i == N_max - 1 or i == 0:
             dR[i] = 0 #Derivative is 0 at infinity and 0
@@ -239,10 +239,10 @@ def metric_RK2(epsilon, u_bar, A, B, A_start, zeta_vals, zeta_s, zeta_max):
     B_array[0] = 0
     N_max = len(zeta_vals)
     DEL = zeta_max/N_max
-    g00, grr = AB_to_metric(A_array, B_array)
-    H_tilde = zeta_vals*np.sqrt(np.sqrt(g00/grr))
-    Rt_array = metric_find_R_tilde(u_bar, g00, grr, zeta_vals)
-    dRt_array = metric_find_dR_tilde(u_bar, H_tilde, g00, grr, zeta_max)
+    #g00, grr = AB_to_metric(A_array, B_array)
+    H_tilde = zeta_vals*np.sqrt(np.sqrt(np.exp(2*A_array-2*B_array)))
+    Rt_array = metric_find_R_tilde(u_bar, A, B, zeta_vals)
+    dRt_array = metric_find_dR_tilde(u_bar, H_tilde, A, B, zeta_max)
     
     for n in range(N_max-1):
         A_n = A_array[n]
@@ -259,8 +259,8 @@ def metric_RK2(epsilon, u_bar, A, B, A_start, zeta_vals, zeta_s, zeta_max):
         B_array[n+1] = B_n + (DEL/2)*(slope_B_n + slope_B_temp)
     
     # recalculate R_tilde
-    g00_out, grr_out = AB_to_metric(A_array, B_array)
-    R_tilde_out = metric_find_R_tilde(u_bar, g00_out, grr_out, zeta_vals)
+    #g00_out, grr_out = AB_to_metric(A_array, B_array)
+    R_tilde_out = metric_find_R_tilde(u_bar, A_array, B_array, zeta_vals)
 
     return A_array, B_array, R_tilde_out
     
@@ -299,7 +299,7 @@ def find_fixed_metric(zeta_0, zeta_s, zeta_vals):
     B_out = np.log(g_rr)/2
     return A_out, B_out
 
-def metric_find_AB_root(x1, x2, fx1, fx2):
+def metric_find_AB_root(x1, x2, fx1, fx2, tol):
     '''
     Uses secant method to find a new guess for x, to be used
     with RK2 in finding an initial condition for A.
@@ -323,7 +323,11 @@ def metric_find_AB_root(x1, x2, fx1, fx2):
     x2_new = x2 - fx2*(x2 - x1)/(fx2 - fx1)
     #print("Sums: ",fx1, fx2)
     
-    return x1_new, x2_new
+    meets_tol = False
+    if abs(x2_new - x1_new) <= tol*(abs(x2_new) +abs(x1_new))/2:
+        meets_tol = True
+
+    return x1_new, x2_new, meets_tol
 
 def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
     '''
@@ -368,22 +372,37 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
         
         # initialize and loop through RK method until converging A_0 boundary condition is found
         A_0_g1 = A_0_guess + 0.1
-        A_0_g2 = A_0_guess - 0.1
+        A_0_g2 = A_0_guess - 1
         A_array1 = np.copy(a_array)
         B_array1 = np.copy(b_array) 
         A_array2 = np.copy(a_array)
         B_array2 = np.copy(b_array)
         metric_rounds = 0
-        schw_error = 1
-        while schw_error > converge_tol:
+        meets_metric_tol = False
+        #schw_error = 1
+        #while schw_error > converge_tol:
+        while meets_metric_tol == False:
             metric_rounds += 1
+            prev_A_0_g1 = A_0_g1
+            prev_A_0_g2 = A_0_g2
+
             A_array1, B_array1, R_tilde1 = metric_RK2(epsilon, u_bar, A_array1, B_array1, A_0_g1, zeta_vals, zeta_s, zeta_max)
             fx1 = A_array1[N_max-1] + B_array1[N_max-1]
             A_array2, B_array2, R_tilde2 = metric_RK2(epsilon, u_bar, A_array2, B_array2, A_0_g2, zeta_vals, zeta_s, zeta_max)
             fx2 = A_array2[N_max-1] + B_array2[N_max-1]
             
-            A_0_g1, A_0_g2 = metric_find_AB_root(A_0_g1, A_0_g2, fx1, fx2)
-            schw_error = abs(A_array2[N_max-1] + B_array2[N_max-1])        
+            A_0_g1, A_0_g2, meets_metric_tol = metric_find_AB_root(A_0_g1, A_0_g2, fx1, fx2, converge_tol)
+            
+            print(f"A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
+            #schw_error = abs(A_array2[N_max-1] + B_array2[N_max-1])   
+            if np.isnan(A_0_g1):
+                A_0_g1 = prev_A_0_g1 - 0.05
+                print(f'using previous guess for A0g1, it is now {A_0_g1}')
+                #schw_error = 1
+            if np.isnan(A_0_g2):
+                A_0_g2 = prev_A_0_g2 - 0.05
+                print(f'using previous guess for A0g2, it is now {A_0_g2}')
+                #schw_error = 1
         
         # check for faulty calculations for metric, exit function if found (useful for finding critical zeta_s)
         if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):
