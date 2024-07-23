@@ -5,12 +5,20 @@ import numpy as np
 from kg_and_metric_functions import find_fixed_metric
 from kg_and_metric_functions import iterate_kg_and_metric
 import pandas as pd
+
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 1500  # Interval Steps
+N = 2000  # Interval Steps
 ZETA_MAX = 20
-ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
+#ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
+#ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
+
+#a1 = np.linspace(0.1, 0.7, 35)
+#a2 = [0.71, 0.72, 0.721, 0.722, 0.723, 0.724, 0.725, 0.726, 0.727, 0.728, 0.729, 0.73]
+#ZETA_Sn = np.concatenate((a1, a2))
+#ZETA_Sn = a1
+ZETA_Sn = np.arange(0.05, 0.75, 0.05)
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------
 # Global variables afterwards

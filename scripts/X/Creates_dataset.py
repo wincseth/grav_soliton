@@ -15,7 +15,8 @@ import pandas as pd
 # User input
 n = 1000  # Interval Steps
 ZETA_MAX = 20
-a1 = np.linspace(0.73, 0.7427, 20)
+#a1 = np.linspace(0.73, 0.7427, 20)
+a1 = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
 ZETA_Sn = a1
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------

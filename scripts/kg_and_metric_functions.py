@@ -3,7 +3,7 @@
 
 #Imported libraries------------------------------------------------------
 import numpy as np
-
+import sys
 # Global Variables-------------------------------------------------------
 
 G = 6.7*10**(-39)  # normalized gravity
@@ -157,6 +157,7 @@ def metric_find_R_tilde(U, A, B, zeta_vals):
     R = np.zeros_like(U) #Initialize zero vector
     use = np.where(zeta_vals != 0) #Finds all indeces of zeta_vals where zeta_vals isn't 0
     R[use] = np.sqrt(np.sqrt(np.exp(2*A[use] - 2*B[use]))) * U[use] / (zeta_vals[use]) #Calculates R
+    R[0] = R[1] # ensure R tilde at zero is nonzero
     return R
 
 def metric_find_dR_tilde(u_bar, H_tilde, A, B, zeta_max):
@@ -183,6 +184,7 @@ def metric_find_dR_tilde(u_bar, H_tilde, A, B, zeta_max):
             dR[i] = 0 #Derivative is 0 at infinity and 0
             continue
         dR[i] = (U_tilde[i+1] - U_tilde[i-1])/(2*DEL*H_tilde[i]) - U_tilde[i]*(H_tilde[i+1]-H_tilde[i-1])/(2*DEL*H_tilde[i]**2) #Calculates derivative of R using finite differences and product rule
+    dR[0] = dR[1] # ensure dR tilde at zero is nonzero
     return dR
 
 def metric_find_dA_dB(A, B, R, dR, n, epsilon, zeta_s, zeta_vals):
@@ -371,8 +373,10 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
         u_bar, epsilon = kg_solver(g00, grr, zeta_s, zeta_vals, zeta_max)
         
         # initialize and loop through RK method until converging A_0 boundary condition is found
-        A_0_g1 = A_0_guess + 0.1
-        A_0_g2 = A_0_guess - 1
+        A_0_g1 = -0.1 # Xavi's version
+        A_0_g2 = -1
+        #A_0_g1 = a_array[0] + 0.1
+        #A_0_g2 = a_array[0] - 0.5
         A_array1 = np.copy(a_array)
         B_array1 = np.copy(b_array) 
         A_array2 = np.copy(a_array)
@@ -381,27 +385,40 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
         meets_metric_tol = False
         #schw_error = 1
         #while schw_error > converge_tol:
+        fx1 = 0
+        fx2 = 0
         while meets_metric_tol == False:
             metric_rounds += 1
+            print(f"--- In metric round {metric_rounds}, (zeta_s={zeta_s}):")
             prev_A_0_g1 = A_0_g1
             prev_A_0_g2 = A_0_g2
 
+            #print(f"    Before RK: A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
             A_array1, B_array1, R_tilde1 = metric_RK2(epsilon, u_bar, A_array1, B_array1, A_0_g1, zeta_vals, zeta_s, zeta_max)
             fx1 = A_array1[N_max-1] + B_array1[N_max-1]
             A_array2, B_array2, R_tilde2 = metric_RK2(epsilon, u_bar, A_array2, B_array2, A_0_g2, zeta_vals, zeta_s, zeta_max)
             fx2 = A_array2[N_max-1] + B_array2[N_max-1]
-            
+            print(f"    After RK: A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
+
             A_0_g1, A_0_g2, meets_metric_tol = metric_find_AB_root(A_0_g1, A_0_g2, fx1, fx2, converge_tol)
-            
-            print(f"A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
+            print(f"    After Secant Method: A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}\n")
+            #metric_error = abs(A_array2[N_max-1] + B_array2[N_max-1])
+            #if metric_error <= 10e-6:
+            #    print("converged with looser conditions")
+            #    break
+            #print(f"A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
             #schw_error = abs(A_array2[N_max-1] + B_array2[N_max-1])   
             if np.isnan(A_0_g1):
-                A_0_g1 = prev_A_0_g1 - 0.05
-                print(f'using previous guess for A0g1, it is now {A_0_g1}')
+                A_0_g1 = -0.1
+                #print(f'using previous guess for A0g1, it is now {A_0_g1}')
+                print("NaN found in A0 guess, stopping script...")
+                sys.exit(1)
                 #schw_error = 1
             if np.isnan(A_0_g2):
-                A_0_g2 = prev_A_0_g2 - 0.05
-                print(f'using previous guess for A0g2, it is now {A_0_g2}')
+                A_0_g2 = -1
+                #print(f'using previous guess for A0g2, it is now {A_0_g2}')
+                print("NaN found in A0 guess, stopping script...")
+                sys.exit(1)
                 #schw_error = 1
         
         # check for faulty calculations for metric, exit function if found (useful for finding critical zeta_s)
