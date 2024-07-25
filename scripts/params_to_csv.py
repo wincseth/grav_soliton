@@ -9,17 +9,16 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 2000  # Interval Steps
+N = 1500  # Interval Steps
 ZETA_MAX = 20
-#ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
-#ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
+#ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.7427]
 
-#a1 = np.linspace(0.1, 0.7, 35)
-#a2 = [0.71, 0.72, 0.721, 0.722, 0.723, 0.724, 0.725, 0.726, 0.727, 0.728, 0.729, 0.73]
-#ZETA_Sn = np.concatenate((a1, a2))
-#ZETA_Sn = a1
-ZETA_Sn = np.arange(0.05, 0.75, 0.05)
+a1 = np.linspace(0.1, 0.7, 7)
+a2 = [0.71, 0.72, 0.73]
+a3 = np.linspace(0.74, 0.7427, 6)
+ZETA_Sn = np.concatenate((a1, a2, a3))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
+
 # -----------------------------------------------------------------------
 # Global variables afterwards
 ZETA_0 = 20
@@ -59,11 +58,13 @@ def main():
         A_0_guess = a_array[0]
         U_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, working_conv = iterate_kg_and_metric(a_array, b_array, ZETA, zeta_s, ZETA_MAX, A_0_guess, ZETA_0)
             
-        print(f'\n--- Epsilon convergence finished for zeta_s={zeta_s} ---\n')
         epsilons.append(epsilon)
         A_0s.append(a_array[0])
         En_ov_M.append(1+epsilon*zeta_s*.5)
         
+        print(f'\n--- Epsilon convergence finished for zeta_s={zeta_s} ---')
+        print(f"zeta_s values: {ZETA_Sn}, epsilons: {epsilons}, A0's: {A_0s}")
+
         if i == 0:
             df1 = pd.DataFrame({'ZETA': ZETA})
         df1[f'U Bar of {zeta_s}'] = abs(U_bar)
