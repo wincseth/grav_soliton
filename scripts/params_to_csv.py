@@ -19,6 +19,7 @@ a3 = np.linspace(0.74, 0.7427, 6)
 ZETA_Sn = np.concatenate((a1, a2, a3))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 
+
 # -----------------------------------------------------------------------
 # Global variables afterwards
 ZETA_0 = 20
@@ -42,8 +43,8 @@ def main():
     # initialize A, B values, either read from existing data or generate metric guess
     zeta_s_start = ZETA_Sn[0]
     if zeta_s_start > 0.1:
-        input_name = input(f"First zeta_s value ({zeta_s_start}) is not close to zero,\n enter AB input file name for better initial guess: ")
-        df0 = pd.read_csv(input_name)
+        input_name = input(f"First zeta_s value ({zeta_s_start}) is not close to zero,\n enter AB csv file name for better initial guess (w/o .csv): ")
+        df0 = pd.read_csv(f"data/csv_files/{input_name}.csv")
         print("Reading file...\n")
         a_array = df0[f'A of {zeta_s_start}'].to_numpy()
         b_array = df0[f'B of {zeta_s_start}'].to_numpy()

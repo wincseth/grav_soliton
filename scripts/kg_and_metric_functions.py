@@ -362,13 +362,13 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
         A_arrays[:, 1], B_arrays[:, 1], R_tilde1 = metric_RK2(epsilon, u_bar, A_arrays[:, 1], B_arrays[:, 1], A0[1], zeta_vals, zeta_s, zeta_max)
         fx[1] = A_arrays[N_max-1, 1] + B_arrays[N_max-1, 1]
         print(f"    After RK: A01: {A0[0]}, A02: {A0[1]}, fx1: {fx[0]}, fx2: {fx[1]}")
-        
+        '''
         # adjust first two so index 1 has smaller fx absolute value
         if np.abs(fx[0]) < np.abs(fx[1]):
             fx[0], fx[1] = fx[1], fx[0]
             A0[0], A0[1] = A0[1], A0[0]
             print("\n   *Switched arrays so second item has smaller abs(fx) value\n")
-
+        '''
         # use secant method to find new A guess and corresponding fx
         A0[2] = A0[1] - fx[1]*(A0[1] - A0[0])/(fx[1] - fx[0])
         A_arrays[:, 2], B_arrays[:, 2], R_tilde2 = metric_RK2(epsilon, u_bar, A_arrays[:, 2], B_arrays[:, 2], A0[2], zeta_vals, zeta_s, zeta_max)
@@ -391,7 +391,7 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
                 R_tilde_out = metric_find_R_tilde(u_bar, A_array_out, B_array_out, zeta_vals)
                 print(f"\n*** A0 converge met in {metric_rounds} rounds: A0={A0_out} ***\n")
                 continue
-
+            '''
             sort_idx = np.argsort(np.abs(fx))
             fx[0] = fx[sort_idx[0]]
             fx[1] = fx[sort_idx[1]]
@@ -400,6 +400,11 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
             A0[1] = A0[sort_idx[1]]
             A0[2] = 0
             print(f"    New sorted vals: A0: {A0}, fx: {fx}\n")
+            '''
+            if abs(fx[1]) < abs(fx[0]):
+                A0[0] = A0[1]
+            A0[1] = A0[2]
+
     return A_array_out, B_array_out, R_tilde_out
 
 def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):

@@ -9,80 +9,94 @@ Created on Wed Jul  3 11:17:06 2024
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import random as r
 
 #Initializing Data Frames and Arrays---------------------------------------------------
-name = input("Which one are we reading in today\n")
-name2 = input("And the other one\n")
+name = input("Enter csv file name for data w.r.t. zeta: ")
+name2 = input("Enter csv file name for data w.r.t. zeta_s: ")
 
-df_ZETA = pd.read_csv(f'datasets/{name}.csv')
-df_ZETA_S = pd.read_csv(f'datasets/{name2}.csv')
+df_ZETA = pd.read_csv(f'data/csv_files/{name}.csv')
+df_ZETA_S = pd.read_csv(f'data/csv_files/{name2}.csv')
 
 ZETA = df_ZETA['ZETA'].to_numpy()
 ZETA_Sn = df_ZETA_S['Unnamed: 0'].to_numpy()
 important_S = []
-colors = ['red', 'orange', 'green', 'cyan', 'blue', 'purple',  'black']
-
+#colors = ['red', 'orange', 'green', 'cyan', 'blue', 'purple',  'black']
+colors = [(r.random(), r.random(), r.random()) for _ in range(len(df_ZETA_S))]
 
 #Main Function-------------------------------------------------------------------------
 def main():
     
-    print("Here are your options \n", ZETA_Sn)
-    for i in range(len(colors)):
-        imps = input("Give me one you need \n")
-        important_S.append(imps)
+    print("zeta_s values in file:\n", ZETA_Sn)
+    choose_zeta_s = input("Plot all zeta_s values? (Y/N): ")
+    if choose_zeta_s == 'N':
+        for i, color in enumerate(colors):
+            imps = input(f"({color}) Enter an above zeta_s to plot with: ")
+            important_S.append(imps)
+    elif choose_zeta_s == 'Y':
+        important_S = ZETA_Sn
     
     #Plot of U_bars
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
-        plt.plot(ZETA, df_ZETA[f'U Bar of {important_S[i]}'], color = colors[i], label = f'ZETA_S of {important_S[i]}')
+        plt.plot(ZETA, df_ZETA[f'U Bar of {important_S[i]}'], color = colors[i], label = f'ZETA_S of {important_S[i]}', alpha=0.5, marker='.')
     plt.xlim((0, 22))
     plt.xlabel('$\zeta$')
     plt.ylabel('U Bar')
-    plt.title(f'U_bars_{name}')
+    plt.title(f'U_bars from {name}.csv')
     plt.legend()
-    plt.savefig(f'images/U_bars_{name}.png')
+    plt.grid(True)
+    #plt.savefig(f'images/U_bars_{name}.png')
     
     #Matching plots of g00 and grr
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
-        plt.plot(ZETA, np.exp(2*df_ZETA[f'A of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
+        #plt.plot(ZETA, np.exp(2*df_ZETA[f'A of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
+        plt.plot(ZETA, df_ZETA[f'A of {important_S[i]}'], color = colors[i], label = f'ZETA_S={important_S[i]}', alpha=0.5, marker='.')
     plt.xlim((0, 40))
     plt.xlabel('$\zeta$')
-    plt.ylabel('g00')
-    plt.title(f'g00_{name}')
-    plt.legend()    
-    plt.savefig(f'images/g00_{name}.png')
+    plt.ylabel('A')
+    plt.title(f'A from {name}.csv')
+    plt.legend()
+    plt.grid(True)
+    #plt.savefig(f'images/g00_{name}.png')
     
     plt.figure(figsize=(9,9))
     for i in range(len(important_S)):
-        plt.plot(ZETA, np.exp(2*df_ZETA[f'B of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
+        #plt.plot(ZETA, np.exp(2*df_ZETA[f'B of {important_S[i]}']), color = colors[i], label = f'ZETA_S of {important_S[i]}')
+        plt.plot(ZETA, df_ZETA[f'B of {important_S[i]}'], color = colors[i], label = f'ZETA_S={important_S[i]}', alpha=0.5, marker='.')
     plt.xlim((0, 40))
     plt.xlabel('$\zeta$')
-    plt.ylabel('grr')
-    plt.title(f'grr_{name}')
-    plt.legend()    
-    plt.savefig(f'images/grr_{name}.png')
+    plt.ylabel('B')
+    plt.title(f'B from {name}.csv')
+    plt.legend()
+    plt.grid(True)    
+    #plt.savefig(f'images/grr_{name}.png')
     
     #Epsilons and their limits
     plt.figure(figsize=(9,9))
-    plt.plot(ZETA_Sn, df_ZETA_S['Epsilons'])
+    plt.plot(ZETA_Sn, df_ZETA_S['Epsilons'], alpha=0.5, marker='.')
     plt.xlabel('$\zeta_s$')
     plt.ylabel('Epsilon')
-    plt.title(f'Epsilons_vs_ZETA_S_{name2}')
-    plt.savefig(f'images/Epsilons_vs_ZETA_S_{name2}.png')
+    plt.title(f'Epsilons_vs_ZETA_S from {name2}.csv')
+    plt.grid(True)
+    #plt.savefig(f'images/Epsilons_vs_ZETA_S_{name2}.png')
     
     plt.figure(figsize=(9,9))
-    plt.plot(ZETA_Sn, df_ZETA_S['A_0'])
+    plt.plot(ZETA_Sn, df_ZETA_S['A_0'], alpha=0.5, marker='.')
     plt.xlabel('$\zeta_s$')
     plt.ylabel('A_0')
-    plt.title(f'A_0_vs_ZETA_S_{name2}')
-    plt.savefig(f'images/A_0_vs_ZETA_S_{name2}.png')
+    plt.title(f'A_0_vs_ZETA_S from {name2}.csv')
+    plt.grid(True)
+    #plt.savefig(f'images/A_0_vs_ZETA_S_{name2}.png')
     
     plt.figure(figsize=(9,9))
-    plt.plot(ZETA_Sn, df_ZETA_S['E/M'])
+    plt.plot(ZETA_Sn, df_ZETA_S['E/M'], alpha=0.5, marker='.')
     plt.xlabel('$\zeta_s$')
     plt.ylabel('E/M')
-    plt.title(f'E_over_M_vs_ZETA_S_{name2}')
-    plt.savefig(f'images/E_over_M_vs_ZETA_S_{name2}.png')
+    plt.title(f'E_over_M_vs_ZETA_S from {name2}.csv')
+    plt.grid(True)
+    #plt.savefig(f'images/E_over_M_vs_ZETA_S_{name2}.png')
     
+    plt.show()
 _=main()
