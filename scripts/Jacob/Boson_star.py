@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 #global variables-----------------------------------------------------------------
 
 #users input for the code
-n = 1000 #interval step
+n = 1500 #interval step
 ZETA_MAX = 20 #maximum zeta value
 ZETA_MIN = 0 #minimum zeta value
-loops = 300 #number of loops the program will iterate through
+loops = 200 #number of loops the program will iterate through
 #---------------------------------------------------------------------------------
 #global variables after user input
 DELTA =(ZETA_MAX)/(n + 1)
@@ -19,7 +19,7 @@ M_PL = 1 / np.sqrt(G) #mass of plank mass
 M = 8.2e10 #if a equals the atomic Bohr radius
 a = 1 /(G*M**3)#gravitational bohr radius
 R_S = 2*G*M #schwarzschild radius
-TOLERANCE = 1.0e-8
+TOLERANCE = 1.0e-6
 
 #functions------------------------------------------------------------------------
 
@@ -176,9 +176,11 @@ def A_B_initialize(ZETA, ZETA_S):
 #Main Function-------------------------------------------------------
 
 def main():
-    zeta_s = [.01, .1, 0.2,0.3,0.4, 0.5, 0.6, 0.7, 0.71, 0.72, 0.725, 0.73, 0.74, 0.741, 0.742, 0.743, 0.744, 0.745, 0.746, 0.747] #how relativistic the function is
+    zeta_s = [.01, .1, 0.2,0.3,0.4, 0.5, 0.6, 0.7, 0.71, 0.72, 0.725, 0.73, 0.735, 0.74, 0.7405, 0.741, 0.7415, 0.742, 0.743, 0.744, 0.745, 0.746, 0.747] #how relativistic the function is
     #zeta_s = [0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.71, 0.715, 0.72, 0.725, 0.73,0.735,0.74]
     #zeta_s = [0.01, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.325, 0.35, 0.375, 0.4, 0.425, 0.45, 0.475, 0.5, 0.525, 0.55, 0.575, 0.6, 0.625, 0.65,0.675, 0.7, 0.701, 0.705, 0.71,0.715, 0.72, 0.725,0.73,0.735,0.74]
+    #zeta_s = np.arange(0.05, 0.75, 0.05)
+    #zeta_s = np.round(zeta_s, decimals = 5)
     e_array = np.zeros_like(zeta_s)
     E_m = np.zeros_like(zeta_s)
     M_m = np.zeros_like(zeta_s)
@@ -206,12 +208,19 @@ def main():
             print("loops= ", i + 1," ZETA_S= ", ZETA_S)
             C, D, F = KG_values(A, B, ZETA_S, h_tilde)
             e, u_bar = KG_solver(C, D, F, A, B, ZETA_S)
-            print("Epsilon = ",e)
+            #print("Epsilon = ",e)
             meets_tol = False
-            A_start1 = A_start + 0.1
-            A_start2 = A_start - 0.1
+            #A_start1 = A_start + 0.1
+            #A_start2 = A_start - 0.1
+            
+            if ZETA_S < 0.74:
+                A_start1 = A_start + 0.1
+                A_start2 = A_start - 0.1
+            elif ZETA_S >= 0.741:
+                A_start1 = -0.05 
+                A_start2 = -0.5
             AB_adjust = 0
-            tol = 1e-8
+            tol = 1e-6
             h_tilde_1 =np.copy(h_tilde)
             h_tilde_2 =np.copy(h_tilde)
             A_1 = np.copy(A)
