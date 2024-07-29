@@ -10,21 +10,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 #Initialize Data Frames and Arrays-----------------------------------------------------
-max1, max2 = input("Which maxs would you like to compare (25, 50, 100, 120, 150)\n").split()
-n1, n2 = input("And the intervals? (250, 500, 1000)\n").split()
 
-df1 = pd.read_csv(f'datasets/n_{n1}_max_{max1}.csv')
-df1_S = pd.read_csv(f'datasets/n_{n1}_max_{max1}_2.csv')
 
-df2 = pd.read_csv(f'datasets/n_{n2}_max_{max2}.csv')
-df2_S = pd.read_csv(f'datasets/n_{n2}_max_{max2}_2.csv')
+df1 = pd.read_csv('datasets/n_1500_max_20_seth4.csv')
+df1_S = pd.read_csv('datasets/n_1500_max_20_seth4_2.csv')
 
-ZETA = df1['ZETA'].to_numpy()
-ZETA_Sn = df1_S['Unnamed: 0'].to_numpy()
+df2 = pd.read_csv('datasets/n_1500_max_20_final.csv')
+df2_S = pd.read_csv('datasets/n_1500_max_20_final_2.csv')
+
+ZETA_Sn1 = df1_S['Unnamed: 0'].to_numpy()
+ZETA_Sn2 = df2_S['Unnamed: 0'].to_numpy()
 
 # Plots to compare data----------------------------------------------------------------
 plt.figure(figsize=(9,9))
-plt.plot(ZETA_Sn, df1_S['Rounds'], label = f'{n1}, {max1}')
-plt.plot(ZETA_Sn, df2_S['Rounds'], label = f'{n2}, {max2}')
+plt.plot(ZETA_Sn1, df1_S['Epsilons'], label = 'Seth', marker = 'o')
+plt.plot(ZETA_Sn2, df2_S['Epsilons'], label = 'Xavi', marker = 'o')
+plt.xlim((.70, .7429))
+plt.ylim((-0.25, -0.35))
 plt.legend()
-plt.savefig(f'images/{n1}_vs_{n2}_and_{max1}_vs_{max2}')

@@ -13,10 +13,12 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User input
-n = 1000  # Interval Steps
+n = 1500  # Interval Steps
 ZETA_MAX = 20
-a1 = np.linspace(0.73, 0.7427, 20)
-ZETA_Sn = a1
+a1 = np.linspace(0.1, 0.7, 7)
+a2 = [0.71, 0.72, 0.73]
+a3 = np.linspace(0.74, 0.7427, 20)_max_20
+ZETA_Sn = np.concatenate((a1, a2, a3))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------
 # Global variables afterwards
@@ -40,6 +42,7 @@ def main():
     prev_g2 = -1
     ZETA_S = ZETA_Sn[0]
     a_array, b_array, h_tilde = find_fixed_metric(zeta_0, ZETA_S, ZETA)
+    df1 = pd.DataFrame({'ZETA': ZETA})
     for i in range(len(ZETA_Sn)):
         ZETA_S = ZETA_Sn[i]
         U_bar, epsilon, a_array, b_array, Rounds, works = integral(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, prev_g2, zeta_0)
@@ -47,9 +50,7 @@ def main():
         epsilons.append(epsilon)
         A_0s.append(a_array[0])
         En_ov_M.append(1+epsilon*ZETA_S*.5)
-        
-        if i == 0:
-            df1 = pd.DataFrame({'ZETA': ZETA})
+          
         df1[f'U Bar of {ZETA_S}'] = abs(U_bar)
         df1[f'A of {ZETA_S}'] = a_array
         df1[f'B of {ZETA_S}'] = b_array
@@ -61,10 +62,9 @@ def main():
                               'E/M' : En_ov_M}, index = ZETA_Sn,)
     
     name = input("What would you like to call these data frames? \n")
-    name2 = input("And the second one?\n")
     
-    df1.to_csv(name)
-    df2.to_csv(name2)
+    df1.to_csv(f'datasets/{name}.csv')
+    df2.to_csv(f'datasets/{name}_2.csv')
     
     
 
