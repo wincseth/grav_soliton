@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 26 22:15:10 2024
+
+@author: xaviblast123
+"""
 
 #Imported libraries------------------------------------------------------
 import numpy as np
-import sys
 # Global Variables-------------------------------------------------------
 
 G = 6.7*10**(-39)  # normalized gravity
@@ -388,7 +392,6 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
                 A0_out = A0[2]
                 A_array_out = A_arrays[:, 2]
                 B_array_out = B_arrays[:, 2]
-                R_tilde_out = metric_find_R_tilde(u_bar, A_array_out, B_array_out, zeta_vals)
                 print(f"\n*** A0 converge met in {metric_rounds} rounds: A0={A0_out} ***\n")
                 continue
             '''
@@ -405,7 +408,7 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
                 A0[0] = A0[1]
             A0[1] = A0[2]
 
-    return A_array_out, B_array_out, R_tilde_out
+    return A_array_out, B_array_out, True
 
 def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
     '''
@@ -434,23 +437,23 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
     eps_rounds = 0
     eps_error = 1
     epsilon = -1
-    N_max = len(zeta_vals)
     converge_tol = 10e-6 # same tolerance between kg/gr and root finding for A_0
     a_array = A
     b_array = B
+    works = True
     # loop between Klein Gordon and metric equations while epsilon is not converged
-    while eps_error > converge_tol:
+    while eps_error > converge_tol and works == True:
         eps_rounds += 1
         prev_epsilon = epsilon
 
         # find u_bar and eps from Klein Gordon
         g00, grr = AB_to_metric(a_array, b_array)
         u_bar, epsilon = kg_solver(g00, grr, zeta_s, zeta_vals, zeta_max)
-        a_array, b_array, R_tilde = metric_converge_AB(a_array[0], epsilon, u_bar, a_array, b_array, zeta_vals, zeta_s, zeta_max, converge_tol)
+        a_array, b_array, works = metric_converge_AB(a_array[0], epsilon, u_bar, a_array, b_array, zeta_vals, zeta_s, zeta_max, converge_tol)
 
         print(f"--- For eps_round: {eps_rounds}, zeta_s={zeta_s}")
         print(f"Current A[0]: {a_array[0]},")
-        print(f"Epsilon: {epsilon}\n")
+        print(f"Epsilon: {epsilon}\n", "Works is ", works)
 
         '''
         # initialize and loop through RK method until converging A_0 boundary condition is found
@@ -530,4 +533,4 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
         #eps_error = abs(prev_a0 - a_array[0])
         eps_error = abs(prev_epsilon - epsilon)
         
-    return u_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, True
+    return u_bar, epsilon, a_array, b_array, eps_rounds, works
