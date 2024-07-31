@@ -145,7 +145,7 @@ def finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX):
 
     U_bar = np.sqrt(grr/goo)*u_tilde #Converts back to 
 
-    return U_bar, epsilon
+    return U_bar, epsilon, u_tilde
 
 
 def radial_func(U, goo, grr, ZETA):
@@ -164,6 +164,7 @@ def radial_func(U, goo, grr, ZETA):
     R = np.zeros_like(U) #Initialize zero vector
     use = np.where(ZETA != 0) #Finds all indeces of ZETA where ZETA isn't 0
     R[use] = np.sqrt(np.sqrt(goo[use]/grr[use])) * U[use] / (ZETA[use]) #Calculates R
+    R[0] = R[1]
     return R
 
 
@@ -328,7 +329,7 @@ def gr_RK2(epsilon, U_bar, A, B, A_start, ZETA, ZETA_S, ZETA_MAX):
         A_array[n+1] = A_n + (DEL/2)*(slope_A_n + slope_A_temp)
         B_array[n+1] = B_n + (DEL/2)*(slope_B_n + slope_B_temp)
     
-    return A_array, B_array
+    return A_array, B_array, Rt_array
 
 def gr_initialize_metric(ZETA_S, ZETA):
     
@@ -376,7 +377,7 @@ def find_fixed_metric(zeta_0, zeta_s, ZETA):
     B_out = np.log(g_rr)/2
     return A_out, B_out, h_tilde
 
-def find_AB_root(x1, x2, fx1, fx2):
+def find_AB_root(x1, x2, fx1, fx2, tol):
     '''
     Uses secant method to find a new guess for x, to be used
     with RK2 in finding an initial condition for A.
@@ -400,7 +401,11 @@ def find_AB_root(x1, x2, fx1, fx2):
     x2_new = x2 - fx2*(x2 - x1)/(fx2 - fx1)
     #print("Sums: ",fx1, fx2)
     
-    return x1_new, x2_new
+    meets_tol = False
+    if abs(x2_new - x1_new) <= tol*(abs(x2_new) +abs(x1_new))/2:
+        meets_tol = True
+    
+    return x1_new, x2_new, meets_tol
 
 def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, prev_g2, zeta_0):
     
@@ -408,12 +413,15 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
     Rounds = 0
     N_max = len(ZETA)
     error2 = 1
+    epsilon = 0
     while error2 > 10**-6:
         Rounds += 1
         goo, grr = back_metric(a_array, b_array)
-        
-        U_bar, epsilon = finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX)
-        error = 1
+        prev_epsilon = epsilon
+        U_bar, epsilon, U_tilde = finite_differences(goo, grr, ZETA_S, ZETA, ZETA_MAX)
+        if np.isnan(np.sum(goo)) or np.isnan(np.sum(grr)):
+                print("ERRoR ERROR")
+                return U_bar, epsilon, a_array, b_array, Rounds, False
         guess_1 = prev_g1
         guess_2 = prev_g2
         A_array1 = np.copy(a_array)
@@ -421,33 +429,50 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
         A_array2 = np.copy(a_array)
         B_array2 = np.copy(b_array)
         rounds = 0
-        while error > 10**-6:
+        tolerance = False
+        while tolerance == False:
             rounds += 1
             prev_g1 = guess_1
             prev_g2 = guess_2
-            A_array1, B_array1 = gr_RK2(epsilon, U_bar, A_array1, B_array1, guess_1, ZETA, ZETA_S, ZETA_MAX)
+            A_array1, B_array1, Rtilde1 = gr_RK2(epsilon, U_bar, A_array1, B_array1, guess_1, ZETA, ZETA_S, ZETA_MAX)
             fx1 = A_array1[N_max-1] + B_array1[N_max-1]
-            A_array2, B_array2 = gr_RK2(epsilon, U_bar, A_array2, B_array2, guess_2, ZETA, ZETA_S, ZETA_MAX)
+            A_array2, B_array2, Rtilde2 = gr_RK2(epsilon, U_bar, A_array2, B_array2, guess_2, ZETA, ZETA_S, ZETA_MAX)
+            if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):
+                    print("ERRoR ERROR")
+                    return U_bar, epsilon, a_array, b_array, Rounds, False
             fx2 = A_array2[N_max-1] + B_array2[N_max-1]
-            guess_1, guess_2 = find_AB_root(guess_1, guess_2, fx1, fx2)
-            error = abs(A_array2[N_max-1] + B_array2[N_max-1])
+            guess_1, guess_2, tolerance = find_AB_root(guess_1, guess_2, fx1, fx2, 10**-8)
             if np.isnan(guess_1) or np.isnan(guess_2):
                 if np.isnan(guess_1):
                     guess_1 = prev_g1
                     print("sum sum sum")
                 if np.isnan(guess_2):
                     guess_2 = prev_g2
+            
         if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):
-            print("ERRoR ERROR")
-            return U_bar, epsilon, a_array, b_array, Rounds, False
-        prev_a0 = a_array[0]
+                print("ERRoR ERROR")
+                return U_bar, epsilon, a_array, b_array, Rounds, False
+        #prev_a0 = a_array[0]
         a_array = A_array2
-        schwartz_a = np.zeros_like(ZETA)
-        index = ZETA > zeta_0
-        schwartz_a[index] = np.log(1-(ZETA_S/ZETA[index]))/2
         b_array = B_array2
         print("Rounds: ", rounds, "Current A[0]: ", a_array[0])
         print("Epsilon: ", epsilon, " for ZETA_S = ", ZETA_S)
-        error2 = abs(prev_a0 - a_array[0])
+        if Rounds > 1:
+            error2 = abs(prev_epsilon - epsilon)
         
     return U_bar, epsilon, a_array, b_array, Rounds, True
+
+def finding_average(ZETA, f):
+    '''
+    Parameters:
+        ZETA: 1D np array
+        f: 1D np array
+    Outputs:
+        sum(ZETA*f)/ZETA: np scalar
+    '''
+    N_max = len(ZETA)
+    a = 0
+    for i in range(N_max-1):
+        a += ZETA[i]*f[i]
+    a /= sum(f)
+    return(a)

@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Fri Jul 26 22:11:53 2024
+
+@author: xaviblast123
+"""
 
 import numpy as np
-from kg_and_metric_functions import find_fixed_metric
-from kg_and_metric_functions import iterate_kg_and_metric
+from Seth_Functions import find_fixed_metric
+from Seth_Functions import iterate_kg_and_metric
 import pandas as pd
 
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 2000  # Interval Steps
+N = 1500  # Interval Steps
 ZETA_MAX = 20
-#ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.7427]
-
 a1 = np.linspace(0.1, 0.7, 7)
 a2 = [0.71, 0.72, 0.73]
-a3 = np.linspace(0.74, 0.7427, 6)
+a3 = np.linspace(0.74, 0.7428, 20)
 ZETA_Sn = np.concatenate((a1, a2, a3))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
-
 
 # -----------------------------------------------------------------------
 # Global variables afterwards
@@ -43,8 +45,8 @@ def main():
     # initialize A, B values, either read from existing data or generate metric guess
     zeta_s_start = ZETA_Sn[0]
     if zeta_s_start > 0.1:
-        input_name = input(f"First zeta_s value ({zeta_s_start}) is not close to zero,\n enter AB csv file name for better initial guess (w/o .csv): ")
-        df0 = pd.read_csv(f"data/csv_files/{input_name}.csv")
+        input_name = input(f"First zeta_s value ({zeta_s_start}) is not close to zero,\n enter AB input file name for better initial guess: ")
+        df0 = pd.read_csv(input_name)
         print("Reading file...\n")
         a_array = df0[f'A of {zeta_s_start}'].to_numpy()
         b_array = df0[f'B of {zeta_s_start}'].to_numpy()
@@ -57,7 +59,7 @@ def main():
         
         # iterate kg/metric for converging epsilon
         A_0_guess = a_array[0]
-        U_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, working_conv = iterate_kg_and_metric(a_array, b_array, ZETA, zeta_s, ZETA_MAX, A_0_guess, ZETA_0)
+        U_bar, epsilon, a_array, b_array, eps_rounds, working_conv = iterate_kg_and_metric(a_array, b_array, ZETA, zeta_s, ZETA_MAX, A_0_guess, ZETA_0)
             
         epsilons.append(epsilon)
         A_0s.append(a_array[0])
@@ -71,7 +73,6 @@ def main():
         df1[f'U Bar of {zeta_s}'] = abs(U_bar)
         df1[f'A of {zeta_s}'] = a_array
         df1[f'B of {zeta_s}'] = b_array
-        df1[f'R tilde of {zeta_s}'] = R_tilde
         #print(epsilons)
         #print("Final A: ", a_array[N_MAX-1])
 
@@ -82,8 +83,8 @@ def main():
     name = input("Enter name for CSV holding u bar, A, B, R tilde (no .csv): \n")
     name2 = input("Enter name for CSV holding epsilon, A0, E/M (no .csv): \n")
     
-    df1.to_csv(f"data/{name}.csv")
-    df2.to_csv(f"data/{name2}.csv")
+    df1.to_csv(f"datasets/{name}.csv")
+    df2.to_csv(f"datasets/{name2}.csv")
     
     
 
