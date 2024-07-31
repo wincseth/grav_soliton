@@ -82,8 +82,8 @@ def main():
     name = input("Enter name for CSV holding u bar, A, B, R tilde (no .csv): \n")
     name2 = input("Enter name for CSV holding epsilon, A0, E/M (no .csv): \n")
     
-    df1.to_csv(f"data/csv_files/{name}.csv")
-    df2.to_csv(f"data/csv_files/{name2}.csv")
+    df1.to_csv(f"data/{name}.csv")
+    df2.to_csv(f"data/{name2}.csv")
     
     
 

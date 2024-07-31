@@ -37,7 +37,7 @@ def initialize_metric(ZETA_S):
         A_array[0] = -0.0015845
     elif ZETA_S == 0.1:
         A_array[0] = -0.01643955
-    elif ZETA_S == 0.2
+    elif ZETA_S == 0.2:
         A_array[0] = 0
     B_array[greater_indx] = -np.log(1 - ZETA_S/ZETA[greater_indx])/2
     g00[greater_indx] = 1 -ZETA_S/ZETA[greater_indx]
