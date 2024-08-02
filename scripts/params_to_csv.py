@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from kg_and_metric_functions import find_fixed_metric
-from kg_and_metric_functions import iterate_kg_and_metric
+from kg_and_metric_functions_g00_grr import find_fixed_metric
+from kg_and_metric_functions_g00_grr import iterate_kg_and_metric
 import pandas as pd
 
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 2000  # Interval Steps
+N = 1500  # Interval Steps
 ZETA_MAX = 20
 #ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.7427]
 
@@ -85,8 +85,5 @@ def main():
     df1.to_csv(f"data/csv_files/{name}.csv")
     df2.to_csv(f"data/csv_files/{name2}.csv")
     
-    
-
-
     
 _=main()
