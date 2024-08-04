@@ -80,6 +80,7 @@ def main():
     plt.ylabel('Epsilon')
     plt.title(f'Epsilons_vs_ZETA_S from {name2}.csv')
     plt.grid(True)
+    plt.xlim(0.6,0.8)
     #plt.savefig(f'images/Epsilons_vs_ZETA_S_{name2}.png')
     
     plt.figure(figsize=(9,9))
