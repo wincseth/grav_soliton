@@ -367,11 +367,6 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
         fx[1] = A_arrays[N_max-1, 1] + B_arrays[N_max-1, 1]
         print(f"    After RK: A01: {A0[0]}, A02: {A0[1]}, fx1: {fx[0]}, fx2: {fx[1]}")
         '''
-        # adjust first two so index 1 has smaller fx absolute value
-        if np.abs(fx[0]) < np.abs(fx[1]):
-            fx[0], fx[1] = fx[1], fx[0]
-            A0[0], A0[1] = A0[1], A0[0]
-            print("\n   *Switched arrays so second item has smaller abs(fx) value\n")
         '''
         # use secant method to find new A guess and corresponding fx
         A0[2] = A0[1] - fx[1]*(A0[1] - A0[0])/(fx[1] - fx[0])
@@ -436,7 +431,7 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
     
     eps_rounds = 0
     eps_error = 1
-    epsilon = -1
+    epsilon = 0
     converge_tol = 10e-6 # same tolerance between kg/gr and root finding for A_0
     a_array = A
     b_array = B
@@ -455,82 +450,8 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
         print(f"Current A[0]: {a_array[0]},")
         print(f"Epsilon: {epsilon}\n", "Works is ", works)
 
-        '''
-        # initialize and loop through RK method until converging A_0 boundary condition is found
-        #A_0_g1 = -0.1 # Xavi's version
-        #A_0_g2 = -1
-        A_0_g1 = a_array[0]
-        A_0_g2 = a_array[0] - 0.1
-        A_array1 = np.copy(a_array)
-        B_array1 = np.copy(b_array) 
-        A_array2 = np.copy(a_array)
-        B_array2 = np.copy(b_array)
-        R_tilde = np.zeros_like(a_array)
-        metric_rounds = 0
-        meets_metric_tol = False
-        #schw_error = 1
-        #while schw_error > converge_tol:
-        fx1 = 0
-        fx2 = 0
-        error = 1
-        while meets_metric_tol == False:
-            metric_rounds += 1
-            print(f"--- In metric round {metric_rounds}, (zeta_s={zeta_s}):")
-            prev_A_0_g1 = A_0_g1
-            prev_A_0_g2 = A_0_g2
-            prev_fx1 = fx1
-            prev_fx2 = fx2
-
-            A_array1, B_array1, R_tilde1 = metric_RK2(epsilon, u_bar, A_array1, B_array1, A_0_g1, zeta_vals, zeta_s, zeta_max)
-            fx1 = A_array1[N_max-1] + B_array1[N_max-1]
-            A_array2, B_array2, R_tilde2 = metric_RK2(epsilon, u_bar, A_array2, B_array2, A_0_g2, zeta_vals, zeta_s, zeta_max)
-            fx2 = A_array2[N_max-1] + B_array2[N_max-1]
-            print(f"    After RK: A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}")
-
-            A_0_g1, A_0_g2, meets_metric_tol = metric_find_AB_root(A_0_g1, A_0_g2, fx1, fx2, converge_tol)
-            print(f"    After Secant Method: A01: {A_0_g1}, A02: {A_0_g2}, fx1: {fx1}, fx2: {fx2}\n")
-            if np.isnan(np.sum(A_array1)):
-                print("----- NaN encountered in A1 estimate, trying previous guess...\n")
-                A_0_g1 = prev_A_0_g1
-                fx1 = prev_fx1
-                #continue
-            if np.isnan(np.sum(A_array2)):
-                print("----- NaN encountered in A2 estimate, trying previous guess...\n")
-                A_0_g2 = prev_A_0_g2
-                fx2 = prev_fx2
-
-            error = abs(A_array2[N_max-1] + B_array2[N_max-1])
-            """
-            if np.isnan(A_0_g1):
-                A_0_g1 = prev_A_0_g1
-                #print(f'using previous guess for A0g1, it is now {A_0_g1}')
-                print(f"\nNaN found in A_0_g1, using previous one ({A_0_g1})...\n")
-                #return u_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, False
-                #sys.exit(1)
-                #schw_error = 1
-            if np.isnan(A_0_g2):
-                A_0_g2 = prev_A_0_g2
-                #print(f'using previous guess for A0g2, it is now {A_0_g2}')
-                print(f"\nNaN found in A_0_g2, using previous one ({A_0_g2})...\n")
-                #return u_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, False
-                #sys.exit(1)
-                #schw_error = 1
-            """
-        # check for faulty calculations for metric, exit function if found (useful for finding critical zeta_s)
-        if np.isnan(np.sum(A_array1)) or np.isnan(np.sum(A_array2)):
-            print(f"\n--- ERROR: NaN encountered in metric data, ending epsilon calculation for zeta_s={zeta_s} --- \n")
-            return u_bar, epsilon, a_array, b_array, R_tilde, eps_rounds, False
-        prev_a0 = a_array[0]
-        
-        a_array = A_array2
-        b_array = B_array2
-        R_tilde = R_tilde2
-        schwartz_a = np.zeros_like(zeta_vals)
-        index = zeta_vals > zeta_0
-        schwartz_a[index] = np.log(1-(zeta_s/zeta_vals[index]))/2
-        '''
-
         #eps_error = abs(prev_a0 - a_array[0])
-        eps_error = abs(prev_epsilon - epsilon)
+        if eps_rounds > 0:
+            eps_error = abs(prev_epsilon - epsilon)
         
     return u_bar, epsilon, a_array, b_array, eps_rounds, works

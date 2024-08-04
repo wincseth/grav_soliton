@@ -15,16 +15,14 @@ import pandas as pd
 # User input
 n = 1500  # Interval Steps
 ZETA_MAX = 20
-<<<<<<< HEAD
-a1 = np.linspace(0.1, 0.7, 7)
-a2 = [0.71, 0.72, 0.73]
-a3 = np.linspace(0.74, 0.7427, 20)_max_20
-ZETA_Sn = np.concatenate((a1, a2, a3))
-=======
+
+#a1 = np.linspace(0.1, 0.7, 25)
+a2 = [0.7, 0.71, 0.72, 0.73]
+a3 = np.linspace(0.74, 0.7427, 20)
+ZETA_Sn = np.concatenate((a2, a3))
 #a1 = np.linspace(0.73, 0.7427, 20)
-a1 = [0.1, 0.2, 0.5, 0.7, 0.74, 0.742, 0.7427]
-ZETA_Sn = a1
->>>>>>> d556516a6ac593060ad4131b2729db51993f7ef1
+
+
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 # -----------------------------------------------------------------------
 # Global variables afterwards
