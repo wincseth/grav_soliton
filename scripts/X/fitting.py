@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-name = 'endpoints'
+name = 'finalend'
 goal = 'epsilons'
 
 df2 = pd.read_csv(f'datasets/n_1500_max_20_{name}.csv')
