@@ -432,7 +432,7 @@ def iterate_kg_and_metric(A, B, zeta_vals, zeta_s, zeta_max, A_0_guess, zeta_0):
     eps_rounds = 0
     eps_error = 1
     epsilon = 0
-    converge_tol = 10e-6 # same tolerance between kg/gr and root finding for A_0
+    converge_tol = 10e-7 # same tolerance between kg/gr and root finding for A_0
     a_array = A
     b_array = B
     works = True

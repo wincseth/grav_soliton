@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 #Initialize Data Frames and Arrays-----------------------------------------------------
 
 
-df1 = pd.read_csv('datasets/n_1500_max_20_seth6.csv')
-df1_S = pd.read_csv('datasets/n_1500_max_20_seth6_2.csv')
+df1 = pd.read_csv('datasets/n_1500_max_20_seth8.csv')
+df1_S = pd.read_csv('datasets/n_1500_max_20_seth8_2.csv')
 
-df2 = pd.read_csv('datasets/n_1500_max_20_final.csv')
-df2_S = pd.read_csv('datasets/n_1500_max_20_final_2.csv')
+df2 = pd.read_csv('datasets/n_1500_max_20_finalend.csv')
+df2_S = pd.read_csv('datasets/n_1500_max_20_finalend_2.csv')
 
 ZETA_Sn1 = df1_S['Unnamed: 0'].to_numpy()
 ZETA_Sn2 = df2_S['Unnamed: 0'].to_numpy()

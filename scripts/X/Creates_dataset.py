@@ -17,9 +17,8 @@ n = 1500  # Interval Steps
 ZETA_MAX = 20
 
 #a1 = np.linspace(0.1, 0.7, 25)
-a2 = [0.7, 0.71, 0.72, 0.73]
 a3 = np.linspace(0.74, 0.7427, 20)
-ZETA_Sn = np.concatenate((a2, a3))
+ZETA_Sn = a3
 #a1 = np.linspace(0.73, 0.7427, 20)
 
 

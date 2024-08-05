@@ -18,7 +18,7 @@ N = 1500  # Interval Steps
 ZETA_MAX = 20
 #a1 = np.linspace(0.1, 0.7, 7)
 #a2 = [0.71, 0.72, 0.73]
-a3 = np.linspace(0.74, 0.7432, 30)
+a3 = np.linspace(0.74, 0.7427, 20)
 ZETA_Sn = a3
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 
