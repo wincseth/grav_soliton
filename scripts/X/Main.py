@@ -13,7 +13,7 @@ from Functions import Runge_Kutta, finite_differences, gr_initialize_metric
 # Global Variables-------------------------------------------------------
 
 # User input
-n = 500  # Interval Steps
+n = 1500  # Interval Steps
 ZETA_MAX = 50
 ZETA_Sn = [.5, 1]
 loops = 33

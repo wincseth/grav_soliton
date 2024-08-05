@@ -379,7 +379,7 @@ def metric_converge_AB(A0_approx, epsilon, u_bar, A, B, zeta_vals, zeta_s, zeta_
         if np.isnan(np.sum(A_arrays[:, 2])) or np.isnan(np.sum(B_arrays[:, 2])):
             print("\n------ NaN encountered in metric from secant method, retrying with wider interval... \n")
             A0[0] += 0.05
-            A0[1] -= 0.05
+            A0[1] -= 0.1
             continue
         else:
             # check for convergence
