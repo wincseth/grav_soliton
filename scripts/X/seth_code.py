@@ -16,10 +16,11 @@ import pandas as pd
 # User inputh
 N = 1500  # Interval Steps
 ZETA_MAX = 20
-#a1 = np.linspace(0.1, 0.7, 7)
-#a2 = [0.71, 0.72, 0.73]
-a3 = np.linspace(0.74, 0.7427, 20)
-ZETA_Sn = a3
+a1 = np.linspace(0.01, 0.1, 10)
+a2 = np.linspace(0.1, 0.7, 7)
+a3 = [0.71, 0.72, 0.73]
+a4 = np.linspace(0.74, 0.7427, 50)#a3 = np.linspace(0.74, 0.7427, 6)
+ZETA_Sn = np.concatenate((a1, a2, a3, a4))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 
 # -----------------------------------------------------------------------
@@ -65,7 +66,7 @@ def main():
         A_0s.append(a_array[0])
         En_ov_M.append(1+epsilon*zeta_s*.5)
         
-        print(f'\n--- Epsilon convergence finished for zeta_s={zeta_s} ---')
+        #print(f'\n--- Epsilon convergence finished for zeta_s={zeta_s} ---')
         print(f"zeta_s values: {ZETA_Sn}, epsilons: {epsilons}, A0's: {A_0s}")
 
         if i == 0:
@@ -79,7 +80,7 @@ def main():
     df2 = pd.DataFrame({'Epsilons' : epsilons,
                               'A_0' : A_0s,
                               'E/M' : En_ov_M}, index = ZETA_Sn,)
-    print("--- Dataset generation conplete ---\n")
+    #print("--- Dataset generation conplete ---\n")
     name = input("Enter name for CSV holding u bar, A, B, R tilde (no .csv): \n")
     name2 = input("Enter name for CSV holding epsilon, A0, E/M (no .csv): \n")
     
