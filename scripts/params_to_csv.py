@@ -8,7 +8,7 @@ import pandas as pd
 
 # Global Variables-------------------------------------------------------
 
-# User inputh
+# User input
 N = 1500  # Interval Steps
 ZETA_MAX = 20
 #ZETA_Sn = [0.1, 0.2, 0.5, 0.7, 0.74, 0.7427]
