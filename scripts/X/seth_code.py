@@ -14,12 +14,12 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 1500  # Interval Steps
+N = 1250  # Interval Steps
 ZETA_MAX = 20
 a1 = np.linspace(0.01, 0.1, 10)
 a2 = np.linspace(0.1, 0.7, 7)
 a3 = [0.71, 0.72, 0.73]
-a4 = np.linspace(0.74, 0.7427, 50)#a3 = np.linspace(0.74, 0.7427, 6)
+a4 = np.linspace(0.74, 0.7427, 20)#a3 = np.linspace(0.74, 0.7427, 6)
 ZETA_Sn = np.concatenate((a1, a2, a3, a4))
 ZETA_Sn = np.round(ZETA_Sn, decimals = 5)
 

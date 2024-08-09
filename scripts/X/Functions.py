@@ -441,7 +441,7 @@ def integrating_inside_out(a_array, b_array, ZETA, ZETA_S, ZETA_MAX, prev_g1, pr
                     print("ERRoR ERROR")
                     return U_bar, epsilon, a_array, b_array, Rounds, False
             fx2 = A_array2[N_max-1] + B_array2[N_max-1]
-            guess_1, guess_2, tolerance = find_AB_root(guess_1, guess_2, fx1, fx2, 10e-8)#originally set as 10**-6
+            guess_1, guess_2, tolerance = find_AB_root(guess_1, guess_2, fx1, fx2, 10e-8)#originally set as 10**-6``
             if np.isnan(guess_1) or np.isnan(guess_2):
                 if np.isnan(guess_1):
                     guess_1 = prev_g1
