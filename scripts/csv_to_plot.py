@@ -20,18 +20,20 @@ df_ZETA_S = pd.read_csv(f'data/n_2500_20_steps_to_0.7427_tol=1e-7/{name2}.csv')
 
 ZETA = df_ZETA['ZETA'].to_numpy()
 ZETA_Sn = df_ZETA_S['Unnamed: 0'].to_numpy()
-important_S = []
 #colors = ['red', 'orange', 'green', 'cyan', 'blue', 'purple',  'black']
-colors = [(r.random(), r.random(), r.random()) for _ in range(len(df_ZETA_S))]
 
 #Main Function-------------------------------------------------------------------------
 def main():
+    important_S = []
+    colors = [(r.random(), r.random(), r.random()) for _ in range(len(df_ZETA_S))]
     
     print("zeta_s values in file:\n", ZETA_Sn)
     choose_zeta_s = input("Plot all zeta_s values? (Y/N): ")
     if choose_zeta_s == 'N':
+        num_colors = input("Enter number of zeta_s values to plot:")
+        colors = [(r.random(), r.random(), r.random()) for _ in range(int(num_colors))]
         for i, color in enumerate(colors):
-            imps = input(f"({color}) Enter an above zeta_s to plot with: ")
+            imps = input(f"(zeta_s number {i}) Enter an above zeta_s to plot with: ")
             important_S.append(imps)
     elif choose_zeta_s == 'Y':
         important_S = ZETA_Sn
