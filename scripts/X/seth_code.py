@@ -14,7 +14,7 @@ import pandas as pd
 # Global Variables-------------------------------------------------------
 
 # User inputh
-N = 1250  # Interval Steps
+N = 1000  # Interval Steps
 ZETA_MAX = 20
 a1 = np.linspace(0.01, 0.1, 10)
 a2 = np.linspace(0.1, 0.7, 7)
