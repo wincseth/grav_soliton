@@ -15,8 +15,8 @@ import random as r
 name = input("Enter csv file name for data w.r.t. zeta: ")
 name2 = input("Enter csv file name for data w.r.t. zeta_s: ")
 
-df_ZETA = pd.read_csv(f'data/csv_files/{name}.csv')
-df_ZETA_S = pd.read_csv(f'data/csv_files/{name2}.csv')
+df_ZETA = pd.read_csv(f'data/n_2500_20_steps_to_0.7427_tol=1e-7/{name}.csv')
+df_ZETA_S = pd.read_csv(f'data/n_2500_20_steps_to_0.7427_tol=1e-7/{name2}.csv')
 
 ZETA = df_ZETA['ZETA'].to_numpy()
 ZETA_Sn = df_ZETA_S['Unnamed: 0'].to_numpy()
